@@ -12,11 +12,35 @@
     button,input{font:inherit}button{cursor:pointer;border:0;border-radius:13px;padding:12px 18px;font-weight:600;transition:transform .18s,box-shadow .18s,background .18s;display:inline-flex;align-items:center;justify-content:center;gap:9px}button:hover{transform:translateY(-2px)}button:active{transform:translateY(0)}button:focus-visible,input:focus-visible{outline:3px solid #d8a943;outline-offset:3px}button:disabled{opacity:.5;cursor:not-allowed;transform:none}.btn-primary{background:var(--green);color:#fff;box-shadow:0 7px 16px #245c4b25}.btn-primary:hover{background:#194a3b}.btn-google{background:#fff;color:#293d37;border:1px solid var(--line)}.btn-google:hover{background:#f7f8f3}.btn-danger{background:#b84e43;color:#fff}.btn-success{background:#34745e;color:#fff}.btn-full{width:100%}
     .view-section{display:none;width:100%;max-width:1100px;margin:0 auto;padding:clamp(16px,4vw,36px)}.view-section.active{display:block;animation:fadeUp .4s ease both}.card{background:rgba(255,254,250,.92);border:1px solid #dfe4d9;border-radius:var(--radius);padding:clamp(20px,4vw,34px);box-shadow:var(--shadow);margin-bottom:22px;backdrop-filter:blur(12px)}h1,h2,h3{font-family:'Prompt','IBM Plex Sans Thai',sans-serif;font-weight:600;letter-spacing:-.02em;line-height:1.3}h1{font-size:clamp(1.8rem,4vw,2.7rem)}h2{font-size:clamp(1.3rem,3vw,1.8rem)}h3{font-size:1.12rem}p{color:var(--ink-soft);line-height:1.75}.eyebrow{display:inline-flex;align-items:center;gap:8px;color:var(--green);font-size:.82rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px}.eyebrow:before{content:'';width:22px;height:2px;background:var(--gold)}.hero-heading{text-align:left;margin-bottom:10px}.hero-copy{max-width:640px}.auth-card{max-width:520px;margin:4vh auto;position:relative;overflow:hidden}.auth-card:before{content:'✳';position:absolute;right:22px;top:6px;font-size:5rem;color:#e8ddbb;opacity:.65;transform:rotate(12deg)}.brand-mark{width:58px;height:58px;display:grid;place-items:center;background:var(--green);color:#fff;border-radius:18px;font-size:1.8rem;margin-bottom:18px;box-shadow:0 10px 20px #245c4b25}.form-control,input[type=text],input[type=email],input[type=password]{width:100%;padding:13px 15px;border-radius:12px;border:1px solid #d5ddd2;background:#fffefa;color:var(--ink);font-size:1rem;margin-bottom:12px;transition:border .2s,box-shadow .2s}input::placeholder{color:#87958d}input:focus{border-color:var(--green-2);box-shadow:0 0 0 4px #34745e17;outline:0}.divider-text{text-align:center;margin:17px 0;color:#829087;font-size:.9rem}.status-pill{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:999px;background:var(--mint);color:var(--green);font-size:.84rem;font-weight:600}.status-pill:before{content:'';width:7px;height:7px;border-radius:50%;background:#4b9877}.panel-soft{background:linear-gradient(135deg,#edf5ec,#f8f2e2);padding:20px;border-radius:17px;border:1px solid #d9e5d8;margin-bottom:24px}.section-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:22px}.section-heading h2{margin:0}.muted{color:var(--ink-soft)}.inline-actions{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}.player-list{list-style:none;padding:0}.player-list li{padding:12px 4px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:12px}.player-list li:last-child{border-bottom:0}
     .puzzle-board{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(2,minmax(80px,1fr));gap:clamp(6px,1.3vw,12px);width:100%;aspect-ratio:2.3/1;max-height:450px;perspective:1200px;margin:24px 0}.puzzle-tile{position:relative;border-radius:13px;cursor:pointer;user-select:none;min-width:0;min-height:0;transition:filter .2s}.puzzle-tile:hover:not(.flipped){filter:brightness(1.08);transform:translateY(-2px)}.tile-inner{position:relative;width:100%;height:100%;text-align:center;transition:transform .65s cubic-bezier(.2,.75,.25,1);transform-style:preserve-3d;border-radius:13px}.puzzle-tile.flipped .tile-inner{transform:rotateY(180deg)}.tile-front,.tile-back{position:absolute;inset:0;backface-visibility:hidden;border-radius:13px;overflow:hidden}.tile-front{background:linear-gradient(145deg,#2c6a56,#173f35);display:flex;align-items:center;justify-content:center;font-family:'Prompt',sans-serif;font-size:clamp(1.1rem,3vw,2rem);font-weight:700;color:#fff;border:1px solid #ffffff40;box-shadow:inset 0 0 0 1px #ffffff12,0 5px 12px #20332f18}.tile-front:after{content:'✳';position:absolute;font-size:clamp(2.5rem,6vw,5rem);opacity:.09;transform:rotate(-15deg)}.tile-back{transform:rotateY(180deg);background-size:500% 200%;border:2px solid #fff;box-shadow:0 4px 14px #20332f20}.tile-back:after{content:'';position:absolute;inset:0;box-shadow:inset 0 0 0 1px #20332f10}.game-topline{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}.score-card{background:var(--mint);padding:12px 16px;border-radius:14px;min-width:140px}.score-card strong{font-size:1.3rem;color:var(--green)}.game-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:9px}.category-badge{display:inline-flex;background:var(--gold-soft);color:#795b19;padding:5px 11px;border-radius:999px;font-size:.83rem;font-weight:600}.answer-row{display:flex;gap:10px;margin-top:20px}.answer-row input{margin:0;flex:1;min-width:0}.feedback{margin-top:14px;font-weight:600;text-align:center;min-height:28px;padding:8px;border-radius:12px}.feedback:not(:empty){background:var(--surface-2)}.answer-hint{font-size:.87rem;margin-top:8px}.podium-container{display:flex;justify-content:center;align-items:flex-end;gap:clamp(8px,2vw,18px);height:300px;margin:30px 0 10px}.podium-step{width:min(25%,150px);min-width:82px;border-radius:16px 16px 5px 5px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:5px;padding:14px 8px 10px;color:#fff;font-weight:600;transform:scaleY(0);transform-origin:bottom;opacity:.4;transition:transform .8s cubic-bezier(.175,.885,.32,1.275),opacity .4s}.podium-step.show{transform:scaleY(1);opacity:1}.podium-1{height:240px;background:linear-gradient(160deg,#e9bf59,#a87618);order:2;box-shadow:0 14px 30px #d8a94330}.podium-2{height:180px;background:linear-gradient(160deg,#aabbb7,#657b75);order:1}.podium-3{height:140px;background:linear-gradient(160deg,#ce9472,#975b3b);order:3}.podium-medal{font-size:1.8rem}.podium-name{max-width:100%;overflow-wrap:anywhere;text-align:center;font-size:.88rem}.podium-score{font-weight:700}.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;margin-top:16px}table{width:100%;border-collapse:collapse;min-width:480px;background:#fffefa}th,td{padding:13px 16px;text-align:left;border-bottom:1px solid var(--line)}th{background:#eef3eb;color:var(--green);font-weight:700}tbody tr:last-child td{border-bottom:0}tbody tr:nth-child(1) td:first-child{color:#a87618;font-weight:700}tbody tr:hover{background:#faf8f0}.results-title{text-align:center}.results-title p{margin-top:8px}.error-text{color:#b84e43;font-size:.9rem;margin-top:10px;text-align:center;min-height:20px}.empty-state{padding:20px;text-align:center;color:var(--ink-soft)}.footer-note{text-align:center;color:#7c8b81;font-size:.8rem;margin:18px 0 0}.btn-quiet{background:#edf1e9;color:var(--green)}
+    /* Sidebar navigation and lobby banner */
+    body{padding-left:252px}
+    .app-sidebar{position:fixed;z-index:50;left:0;top:0;bottom:0;width:232px;padding:24px 16px;background:rgba(255,254,250,.94);border-right:1px solid var(--line);backdrop-filter:blur(18px);display:flex;flex-direction:column;gap:18px;box-shadow:8px 0 30px rgba(32,51,47,.04)}
+    .sidebar-brand{display:flex;align-items:center;gap:11px;padding:4px 7px 18px;border-bottom:1px solid var(--line)}.sidebar-brand .brand-mark{width:42px;height:42px;min-width:42px;border-radius:13px;margin:0;font-size:1.3rem}.sidebar-brand strong{font-family:'Prompt',sans-serif;line-height:1.2;display:block}.sidebar-brand small{color:var(--ink-soft);font-size:.74rem}
+    .sidebar-label{font-size:.72rem;font-weight:700;color:#87958d;letter-spacing:.08em;padding:0 10px;text-transform:uppercase}.sidebar-nav{display:grid;gap:6px}.sidebar-nav button{justify-content:flex-start;text-align:left;background:transparent;color:var(--ink-soft);padding:12px 13px;border-radius:12px;font-weight:500}.sidebar-nav button:hover,.sidebar-nav button.active{background:var(--mint);color:var(--green)}.sidebar-nav button .nav-icon{width:23px;text-align:center;font-size:1.08rem}.sidebar-bottom{margin-top:auto;border-top:1px solid var(--line);padding-top:14px}.sidebar-user{padding:9px 10px;color:var(--ink-soft);font-size:.82rem;overflow-wrap:anywhere}.sidebar-user strong{display:block;color:var(--ink);font-size:.9rem}.sidebar-toggle{display:none;position:fixed;z-index:70;top:12px;left:12px;background:var(--green);color:#fff;padding:10px 13px;box-shadow:var(--shadow)}
+    .view-section{max-width:1180px}.lobby-banner{position:relative;min-height:270px;overflow:hidden;border-radius:22px;margin-bottom:24px;padding:clamp(24px,4vw,42px);display:flex;align-items:center;background:linear-gradient(105deg,rgba(18,57,46,.95),rgba(36,92,75,.75)),url('assets/images/q3.png') center/cover;color:#fff;box-shadow:var(--shadow)}.lobby-banner:after{content:'✳';position:absolute;right:5%;top:-35%;font-size:18rem;color:#fff;opacity:.07;pointer-events:none}.banner-copy{position:relative;z-index:1;max-width:640px}.lobby-banner .eyebrow{color:#ffe4a3}.lobby-banner h1{font-size:clamp(2rem,4vw,3rem);margin-bottom:10px}.lobby-banner p{color:#e8f0e8;max-width:560px}.banner-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}.btn-gold{background:var(--gold);color:#2f3c2f}.banner-editor{margin-top:18px;padding:18px;border:1px dashed #c9d7c8;border-radius:16px;background:#f7f8f1}.banner-editor-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.banner-editor-grid label{display:block;font-size:.85rem;font-weight:600;margin-bottom:5px}.banner-preview{height:95px;border-radius:12px;background:center/cover no-repeat #dfe9dc;margin:8px 0 12px;border:1px solid var(--line)}.profile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.profile-stat{background:#f0f4ec;border:1px solid var(--line);padding:18px;border-radius:16px}.profile-stat strong{display:block;font-size:1.5rem;color:var(--green)}.history-item{display:flex;justify-content:space-between;gap:14px;align-items:center;padding:15px 0;border-bottom:1px solid var(--line)}.history-item:last-child{border-bottom:0}.history-item strong{display:block}.history-meta{font-size:.85rem;color:var(--ink-soft)}
+    @media(max-width:850px){body{padding-left:0}.app-sidebar{width:260px;transform:translateX(-105%);transition:transform .25s ease;box-shadow:18px 0 50px #20332f22}.app-sidebar.open{transform:translateX(0)}.sidebar-toggle{display:inline-flex}.view-section{padding-top:66px}.banner-editor-grid,.profile-grid{grid-template-columns:1fr}}
+    @media(min-width:851px){.sidebar-toggle{display:none}}
     @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}@media(max-width:700px){.view-section{padding:14px}.card{border-radius:18px;padding:20px}.puzzle-board{gap:5px;aspect-ratio:1.35/1;grid-template-rows:repeat(2,minmax(76px,1fr))}.tile-front,.tile-back{border-radius:8px}.answer-row{flex-direction:column}.answer-row button{width:100%}.podium-container{height:250px}.podium-1{height:200px}.podium-2{height:150px}.podium-3{height:115px}.section-heading{align-items:flex-start}.score-card{min-width:unset}.game-topline{align-items:stretch}}@media(max-width:420px){.puzzle-board{grid-template-columns:repeat(5,minmax(0,1fr));aspect-ratio:1.05/1;grid-template-rows:repeat(2,minmax(65px,1fr))}.tile-front{font-size:1.1rem}.podium-name{font-size:.75rem}.podium-step{min-width:76px}.podium-container{gap:6px}}
     @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
   </style>
 </head>
 <body>
+
+  <button class="sidebar-toggle" id="btn-sidebar-toggle" aria-label="เปิดเมนู">☰ เมนู</button>
+  <aside class="app-sidebar" id="app-sidebar" aria-label="เมนูหลัก">
+    <div class="sidebar-brand"><div class="brand-mark" aria-hidden="true">✳</div><div><strong>Social Science<br>Arena</strong><small>HUSO · PLAY & LEARN</small></div></div>
+    <div class="sidebar-label">เมนูหลัก</div>
+    <nav class="sidebar-nav">
+      <button id="nav-lobby" class="active"><span class="nav-icon">⌂</span>หน้าล็อบบี้</button>
+      <button id="nav-profile"><span class="nav-icon">♙</span>โปรไฟล์ของฉัน</button>
+      <button id="nav-history"><span class="nav-icon">◷</span>ประวัติการเล่น</button>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="sidebar-user" id="sidebar-user"><strong>ยังไม่ได้เข้าสู่ระบบ</strong>เข้าสู่ระบบเพื่อบันทึกประวัติ</div>
+      <button id="btn-sidebar-auth" class="btn-primary btn-full">เข้าสู่ระบบ</button>
+      <button id="btn-sidebar-logout" class="btn-quiet btn-full" style="display:none;margin-top:8px">ออกจากระบบ</button>
+    </div>
+  </aside>
 
   <!-- ================= 1. หน้าเข้าสู่ระบบ (AUTH VIEW) ================= -->
   <section id="view-auth" class="view-section active">
@@ -44,6 +68,20 @@
 
   <!-- ================= 2. หน้ารอเข้าห้อง (LOBBY VIEW) ================= -->
   <section id="view-lobby" class="view-section">
+    <div class="lobby-banner" id="lobby-banner">
+      <div class="banner-copy"><span class="eyebrow">HUSO · SOCIAL SCIENCE GAME</span><h1 id="banner-title">เปิดภาพ ค้นความหมาย เข้าใจสังคม</h1><p id="banner-subtitle">เกมทายภาพจิ๊กซอว์ที่เปลี่ยนแนวคิดทางสังคมศาสตร์ให้เป็นการแข่งขันที่สนุก เรียนรู้ไปพร้อมกับเพื่อน ๆ</p><div class="banner-actions"><button class="btn-gold" id="btn-banner-play">เข้าร่วมการแข่งขัน <span aria-hidden="true">→</span></button><span class="status-pill">10 ภาพ · เล่นเป็นทีมได้</span></div></div>
+    </div>
+    <div class="card" id="host-banner-editor" style="display:none">
+      <div class="section-heading"><div><span class="eyebrow">HOST CUSTOMIZATION</span><h2>ปรับแต่งแบนเนอร์หน้า Lobby</h2></div><span class="status-pill">เฉพาะ Host</span></div>
+      <p style="margin-bottom:14px">เปลี่ยนหัวข้อ คำโปรย และภาพตัวอย่างที่ผู้เล่นเห็นหน้าแรกได้ ภาพใช้ URL สาธารณะหรือพาธรูปในเว็บไซต์ เช่น assets/images/q1.png</p>
+      <div class="banner-editor-grid">
+        <div><label for="banner-title-input">หัวข้อแบนเนอร์</label><input id="banner-title-input" type="text" maxlength="90" placeholder="เปิดภาพ ค้นความหมาย เข้าใจสังคม"></div>
+        <div><label for="banner-image-input">URL หรือพาธภาพ</label><input id="banner-image-input" type="text" maxlength="500" placeholder="assets/images/q1.png"></div>
+        <div style="grid-column:1/-1"><label for="banner-subtitle-input">คำอธิบาย</label><input id="banner-subtitle-input" type="text" maxlength="220" placeholder="รายละเอียดสั้น ๆ ของเกม"></div>
+      </div>
+      <div id="banner-preview" class="banner-preview" aria-label="ตัวอย่างภาพแบนเนอร์"></div>
+      <div class="inline-actions" style="margin:0"><button id="btn-banner-preview" class="btn-quiet">ดูตัวอย่าง</button><button id="btn-banner-save" class="btn-primary">บันทึกแบนเนอร์</button><span id="banner-save-status" class="muted" role="status"></span></div>
+    </div>
     <div class="card">
       <span class="eyebrow">PLAY TOGETHER</span>
       <div class="section-heading">
@@ -64,6 +102,23 @@
         <input type="text" id="player-nickname" placeholder="ตั้งชื่อเล่นของคุณ">
         <button id="btn-join-room" class="btn-success btn-full">เข้าห้องแข่งขัน</button>
       </div>
+    </div>
+  </section>
+
+  <!-- ================= โปรไฟล์ผู้ใช้ ================= -->
+  <section id="view-profile" class="view-section">
+    <div class="card"><span class="eyebrow">YOUR ACCOUNT</span><h1>โปรไฟล์ของฉัน</h1><p style="margin:8px 0 22px">จัดการข้อมูลบัญชีและดูภาพรวมการเล่นของคุณ</p>
+      <div class="panel-soft"><h3 id="profile-display-name">ผู้เล่น Social Science Arena</h3><p id="profile-email">—</p><span id="profile-role" class="status-pill">สมาชิก</span></div>
+      <div class="profile-grid"><div class="profile-stat"><span class="muted">จำนวนเกมที่จบแล้ว</span><strong id="profile-games">0</strong></div><div class="profile-stat"><span class="muted">คะแนนสะสมจากประวัติ</span><strong id="profile-total-score">0</strong></div></div>
+      <div class="inline-actions"><button id="btn-profile-history" class="btn-primary">ดูประวัติการเล่น</button><button id="btn-profile-login" class="btn-quiet" style="display:none">เข้าสู่ระบบ</button></div>
+    </div>
+  </section>
+
+  <!-- ================= ประวัติการเล่น ================= -->
+  <section id="view-history" class="view-section">
+    <div class="card"><span class="eyebrow">PLAY HISTORY</span><h1>ประวัติการเล่น</h1><p style="margin:8px 0 18px">ประวัติเกมที่บัญชีนี้เข้าร่วมและมีการสรุปผลแล้ว</p>
+      <div id="history-list"><div class="empty-state">กำลังโหลดประวัติการเล่น…</div></div>
+      <div class="inline-actions"><button id="btn-history-lobby" class="btn-primary">กลับหน้าล็อบบี้</button></div>
     </div>
   </section>
 
@@ -273,16 +328,111 @@
       const target = document.getElementById(viewId); if (target) target.classList.add('active');
     }
 
+    // Sidebar, profile, lobby banner and personal play history
+    const DEFAULT_BANNER = { title: 'เปิดภาพ ค้นความหมาย เข้าใจสังคม', subtitle: 'เกมทายภาพจิ๊กซอว์ที่เปลี่ยนแนวคิดทางสังคมศาสตร์ให้เป็นการแข่งขันที่สนุก เรียนรู้ไปพร้อมกับเพื่อน ๆ', image: 'assets/images/q3.png' };
+    let bannerSettings = { ...DEFAULT_BANNER };
+    function navigate(viewId) {
+      if ((viewId === 'view-profile' || viewId === 'view-history') && !currentUser) { switchView('view-auth'); return; }
+      switchView(viewId);
+      document.querySelectorAll('.sidebar-nav button').forEach(b => b.classList.remove('active'));
+      const map = { 'view-lobby':'nav-lobby', 'view-profile':'nav-profile', 'view-history':'nav-history' };
+      if (map[viewId]) document.getElementById(map[viewId]).classList.add('active');
+      document.getElementById('app-sidebar').classList.remove('open');
+      if (viewId === 'view-profile') loadProfile();
+      if (viewId === 'view-history') loadPlayHistory();
+    }
+    document.getElementById('btn-sidebar-toggle').addEventListener('click', () => document.getElementById('app-sidebar').classList.toggle('open'));
+    document.getElementById('nav-lobby').addEventListener('click', () => navigate(currentUser ? 'view-lobby' : 'view-auth'));
+    document.getElementById('nav-profile').addEventListener('click', () => navigate('view-profile'));
+    document.getElementById('nav-history').addEventListener('click', () => navigate('view-history'));
+    document.getElementById('btn-sidebar-auth').addEventListener('click', () => navigate('view-auth'));
+    document.getElementById('btn-sidebar-logout').addEventListener('click', async () => { await signOut(auth); navigate('view-auth'); });
+    document.getElementById('btn-banner-play').addEventListener('click', () => { document.getElementById('join-room-code').focus(); document.getElementById('join-room-code').scrollIntoView({behavior:'smooth',block:'center'}); });
+    document.getElementById('btn-profile-history').addEventListener('click', () => navigate('view-history'));
+    document.getElementById('btn-profile-login').addEventListener('click', () => navigate('view-auth'));
+    document.getElementById('btn-history-lobby').addEventListener('click', () => navigate('view-lobby'));
+
+    function applyBanner(data = DEFAULT_BANNER) {
+      bannerSettings = { ...DEFAULT_BANNER, ...(data || {}) };
+      document.getElementById('banner-title').textContent = bannerSettings.title;
+      document.getElementById('banner-subtitle').textContent = bannerSettings.subtitle;
+      const safeImage = String(bannerSettings.image || DEFAULT_BANNER.image).replace(/[\"'<>]/g, '');
+      document.getElementById('lobby-banner').style.backgroundImage = `linear-gradient(105deg,rgba(18,57,46,.95),rgba(36,92,75,.72)),url("${safeImage}")`;
+      document.getElementById('banner-title-input').value = bannerSettings.title;
+      document.getElementById('banner-subtitle-input').value = bannerSettings.subtitle;
+      document.getElementById('banner-image-input').value = bannerSettings.image;
+      updateBannerPreview();
+    }
+    function updateBannerPreview() {
+      const image = (document.getElementById('banner-image-input').value.trim() || DEFAULT_BANNER.image).replace(/[\"'<>]/g, '');
+      document.getElementById('banner-preview').style.backgroundImage = `linear-gradient(90deg,rgba(18,57,46,.18),rgba(36,92,75,.05)),url("${image}")`;
+    }
+    document.getElementById('btn-banner-preview').addEventListener('click', () => {
+      document.getElementById('banner-title').textContent = document.getElementById('banner-title-input').value.trim() || DEFAULT_BANNER.title;
+      document.getElementById('banner-subtitle').textContent = document.getElementById('banner-subtitle-input').value.trim() || DEFAULT_BANNER.subtitle;
+      updateBannerPreview();
+      const image = (document.getElementById('banner-image-input').value.trim() || DEFAULT_BANNER.image).replace(/[\"'<>]/g, '');
+      document.getElementById('lobby-banner').style.backgroundImage = `linear-gradient(105deg,rgba(18,57,46,.95),rgba(36,92,75,.72)),url("${image}")`;
+    });
+    document.getElementById('banner-image-input').addEventListener('input', updateBannerPreview);
+    async function loadBanner() {
+      try { const snap = await getDoc(doc(db, 'appSettings', 'lobbyBanner')); if (snap.exists()) applyBanner(snap.data()); else applyBanner(); }
+      catch (err) { applyBanner(); console.warn('ใช้แบนเนอร์เริ่มต้น:', err.code || err.message); }
+    }
+    document.getElementById('btn-banner-save').addEventListener('click', async () => {
+      if (!currentUser || !isHost) return alert('เฉพาะบัญชี Host ที่ได้รับอนุญาตเท่านั้น');
+      const title = document.getElementById('banner-title-input').value.trim().slice(0,90) || DEFAULT_BANNER.title;
+      const subtitle = document.getElementById('banner-subtitle-input').value.trim().slice(0,220) || DEFAULT_BANNER.subtitle;
+      const image = document.getElementById('banner-image-input').value.trim().slice(0,500) || DEFAULT_BANNER.image;
+      if (!/^(https?:\/\/|assets\/|\/)/i.test(image)) return alert('ใส่ URL ภาพที่ขึ้นต้นด้วย https:// หรือพาธ assets/ ภายในเว็บไซต์');
+      const btn = document.getElementById('btn-banner-save'); btn.disabled = true; document.getElementById('banner-save-status').textContent = 'กำลังบันทึก…';
+      try { await setDoc(doc(db, 'appSettings', 'lobbyBanner'), { title, subtitle, image, updatedAt: serverTimestamp(), updatedBy: currentUser.uid }); applyBanner({title, subtitle, image}); document.getElementById('banner-save-status').textContent = 'บันทึกแบนเนอร์แล้ว'; }
+      catch (err) { document.getElementById('banner-save-status').textContent = friendlyError(err); }
+      finally { btn.disabled = false; }
+    });
+    async function loadProfile() {
+      if (!currentUser) return;
+      document.getElementById('profile-display-name').textContent = currentUser.displayName || currentUser.email?.split('@')[0] || 'สมาชิก';
+      document.getElementById('profile-email').textContent = currentUser.email || 'บัญชี Google';
+      document.getElementById('profile-role').textContent = isHost ? 'Host · ผู้ดูแลเกม' : 'สมาชิก';
+      try { const snap = await getDocs(collection(db, 'users', currentUser.uid, 'gameHistory')); let total=0; snap.forEach(d => total += Number(d.data().score || 0)); document.getElementById('profile-games').textContent = snap.size; document.getElementById('profile-total-score').textContent = total.toLocaleString(); }
+      catch (_) { document.getElementById('profile-games').textContent = '—'; document.getElementById('profile-total-score').textContent = '—'; }
+    }
+    async function loadPlayHistory() {
+      const list = document.getElementById('history-list');
+      if (!currentUser) { list.innerHTML = '<div class="empty-state">กรุณาเข้าสู่ระบบเพื่อดูประวัติการเล่น</div>'; return; }
+      list.innerHTML = '<div class="empty-state">กำลังโหลดประวัติการเล่น…</div>';
+      try {
+        const snap = await getDocs(collection(db, 'users', currentUser.uid, 'gameHistory'));
+        const rows = []; snap.forEach(d => rows.push({id:d.id,...d.data()}));
+        rows.sort((a,b) => (b.finishedAt?.seconds || 0) - (a.finishedAt?.seconds || 0));
+        list.innerHTML = rows.length ? rows.map(row => { const date = row.finishedAt?.toDate ? row.finishedAt.toDate().toLocaleString('th-TH') : 'เวลายังไม่พร้อม'; return `<div class="history-item"><div><strong>ห้อง ${escapeHtml(row.roomCode || row.id)}</strong><div class="history-meta">${escapeHtml(date)} · ${Number(row.correctCount||0)} ข้อที่ตอบถูก</div></div><div style="text-align:right"><strong style="color:var(--green)">${Number(row.score||0).toLocaleString()} คะแนน</strong><div class="history-meta">${Number(row.rank||0) ? 'อันดับ '+Number(row.rank) : 'จบเกม'}</div></div></div>`; }).join('') : '<div class="empty-state">ยังไม่มีประวัติการเล่น เมื่อจบเกมที่เข้าร่วม ประวัติจะปรากฏที่นี่</div>';
+      } catch (err) { list.innerHTML = `<div class="empty-state">โหลดประวัติไม่ได้: ${escapeHtml(friendlyError(err))}<br>ตรวจสอบ Firestore Rules แล้วลองใหม่</div>`; }
+    }
+
     // 5. การจัดการสิทธิ์และ Authentication
-    onAuthStateChanged(auth, user => {
+    onAuthStateChanged(auth, async user => {
       currentUser = user;
+      const sidebarUser = document.getElementById('sidebar-user');
       if (user) {
         isHost = (user.email === "host123@gmail.com"); // Prototype only: replace with verified custom claims before production.
         document.getElementById('user-badge').textContent = `${user.email || 'ผู้เล่นทั่วไป'} (${isHost ? 'Host' : 'Player'})`;
         document.getElementById('host-panel-lobby').style.display = isHost ? 'block' : 'none';
-        switchView('view-lobby');
+        document.getElementById('host-banner-editor').style.display = isHost ? 'block' : 'none';
+        document.getElementById('btn-sidebar-auth').style.display = 'none';
+        document.getElementById('btn-sidebar-logout').style.display = 'inline-flex';
+        sidebarUser.innerHTML = `<strong>${escapeHtml(user.displayName || user.email || 'สมาชิก')}</strong>${isHost ? 'Host · ผู้ดูแลเกม' : 'สมาชิก'}`;
+        await loadBanner();
+        navigate('view-lobby');
       } else {
-        switchView('view-auth');
+        isHost = false;
+        document.getElementById('host-panel-lobby').style.display = 'none';
+        document.getElementById('host-banner-editor').style.display = 'none';
+        document.getElementById('btn-sidebar-auth').style.display = 'inline-flex';
+        document.getElementById('btn-sidebar-logout').style.display = 'none';
+        sidebarUser.innerHTML = '<strong>ยังไม่ได้เข้าสู่ระบบ</strong>เข้าสู่ระบบเพื่อบันทึกประวัติ';
+        await loadBanner();
+        navigate('view-auth');
       }
     });
 
@@ -537,6 +687,15 @@
       const players = [];
       pSnapshot.forEach(d => players.push(d.data()));
       players.sort((a, b) => (Number(b.score) || 0) - (Number(a.score) || 0) || (Number(b.correctCount) || 0) - (Number(a.correctCount) || 0) || String(a.name || '').localeCompare(String(b.name || ''), 'th'));
+      // บันทึกประวัติของผู้ใช้แต่ละคนครั้งเดียวเมื่อเกมจบ
+      if (currentUser) {
+        const ownIndex = players.findIndex(p => p.uid === currentUser.uid || p.email === currentUser.email);
+        const own = ownIndex >= 0 ? players[ownIndex] : null;
+        if (own) {
+          try { await setDoc(doc(db, 'users', currentUser.uid, 'gameHistory', roomId), { roomCode: roomId, score: Number(own.score || 0), correctCount: Number(own.correctCount || 0), rank: ownIndex + 1, finishedAt: serverTimestamp() }, { merge: true }); }
+          catch (err) { console.warn('ไม่สามารถบันทึกประวัติการเล่นได้', err.code || err.message); }
+        }
+      }
       if (!players.length) document.getElementById('leaderboard-body').innerHTML = '<tr><td colspan="4" class="empty-state">ยังไม่มีผู้เข้าร่วมการแข่งขัน</td></tr>'; 
       document.getElementById('p1-name').textContent = players[0]?.name || 'ยังไม่มีผู้เล่น';
       document.getElementById('p1-score').textContent = players[0] ? `${Number(players[0].score || 0).toLocaleString()} คะแนน` : '—';
@@ -588,7 +747,7 @@
       if (roomUnsubscribe) roomUnsubscribe(); if (playersUnsubscribe) playersUnsubscribe();
       currentRoomId = null; activeRoundNumber = null; resultShownFor = null;
       document.getElementById('btn-host-close').style.display = 'inline-flex';
-      if (currentUser) switchView('view-lobby'); else switchView('view-auth');
+      if (currentUser) navigate('view-lobby'); else navigate('view-auth');
     });
   </script>
 </body>

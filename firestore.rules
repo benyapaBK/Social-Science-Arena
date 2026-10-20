@@ -2,9 +2,32 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
+    function isConfiguredHost() { return signedIn() && request.auth.token.email == 'host123@gmail.com'; }
     function roomExists(roomId) { return exists(/databases/$(database)/documents/rooms/$(roomId)); }
     function roomData(roomId) { return get(/databases/$(database)/documents/rooms/$(roomId)).data; }
     function isRoomHost(roomId) { return signedIn() && roomExists(roomId) && roomData(roomId).hostUid == request.auth.uid; }
+
+    match /appSettings/{settingId} {
+      allow read: if signedIn();
+      allow create, update: if settingId == 'lobbyBanner' && isConfiguredHost()
+        && request.resource.data.keys().hasOnly(['title', 'subtitle', 'image', 'updatedAt', 'updatedBy'])
+        && request.resource.data.title is string && request.resource.data.title.size() <= 90
+        && request.resource.data.subtitle is string && request.resource.data.subtitle.size() <= 220
+        && request.resource.data.image is string && request.resource.data.image.size() <= 500
+        && request.resource.data.updatedBy == request.auth.uid;
+      allow delete: if false;
+    }
+
+    match /users/{uid}/gameHistory/{historyId} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['roomCode', 'score', 'correctCount', 'rank', 'finishedAt'])
+        && request.resource.data.roomCode is string
+        && request.resource.data.score is number && request.resource.data.score >= 0
+        && request.resource.data.correctCount is number && request.resource.data.correctCount >= 0
+        && request.resource.data.rank is number && request.resource.data.rank >= 1;
+      allow delete: if signedIn() && request.auth.uid == uid;
+    }
 
     match /rooms/{roomId} {
       allow read: if signedIn();
@@ -19,7 +42,7 @@ service cloud.firestore {
       allow delete: if isRoomHost(roomId);
 
       match /players/{uid} {
-        allow read: if signedIn() && (isRoomHost(roomId) || request.auth.uid == uid);
+        allow read: if signedIn() && (isRoomHost(roomId) || request.auth.uid == uid || roomData(roomId).status in ['FINISHED', 'CLOSED', 'PLAYING', 'WAITING']);
         allow create: if signedIn() && request.auth.uid == uid && roomExists(roomId)
           && roomData(roomId).status == 'WAITING'
           && request.resource.data.uid == uid
@@ -28,8 +51,7 @@ service cloud.firestore {
           && request.resource.data.name.size() <= 24
           && request.resource.data.score == 0
           && request.resource.data.correctCount == 0;
-        // Prototype only: score updates are client-side and can be manipulated.
-        // For a public/graded competition, move answer validation and score updates to Cloud Functions.
+        // Prototype: score updates still occur client-side; move scoring to trusted Cloud Functions for production.
         allow update: if signedIn() && request.auth.uid == uid
           && request.resource.data.uid == resource.data.uid
           && request.resource.data.name == resource.data.name
