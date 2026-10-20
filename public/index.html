@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Social Science Puzzle Arena</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Prompt:wght@400;500;600;700&display=swap');
+    :root{--ink:#20332f;--ink-soft:#526660;--paper:#f6f4ed;--surface:#fffefa;--surface-2:#f0eee5;--line:#dce2d8;--green:#245c4b;--green-2:#34745e;--mint:#e0eee4;--gold:#d8a943;--gold-soft:#fff2cf;--coral:#d96f5e;--blue:#547f91;--shadow:0 16px 42px rgba(32,51,47,.09);--radius:22px}
+    *{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{font-family:'IBM Plex Sans Thai',sans-serif;background:radial-gradient(ellipse at 12% 0%,#e6eee4 0,transparent 36%),radial-gradient(ellipse at 100% 20%,#f4ead2 0,transparent 32%),var(--paper);color:var(--ink);min-height:100vh;line-height:1.55}body:before{content:'';position:fixed;inset:0;pointer-events:none;opacity:.18;background-image:radial-gradient(#8b9b89 .7px,transparent .7px);background-size:18px 18px;z-index:-1}
+    button,input{font:inherit}button{cursor:pointer;border:0;border-radius:13px;padding:12px 18px;font-weight:600;transition:transform .18s,box-shadow .18s,background .18s;display:inline-flex;align-items:center;justify-content:center;gap:9px}button:hover{transform:translateY(-2px)}button:active{transform:translateY(0)}button:focus-visible,input:focus-visible{outline:3px solid #d8a943;outline-offset:3px}button:disabled{opacity:.5;cursor:not-allowed;transform:none}.btn-primary{background:var(--green);color:#fff;box-shadow:0 7px 16px #245c4b25}.btn-primary:hover{background:#194a3b}.btn-google{background:#fff;color:#293d37;border:1px solid var(--line)}.btn-google:hover{background:#f7f8f3}.btn-danger{background:#b84e43;color:#fff}.btn-success{background:#34745e;color:#fff}.btn-full{width:100%}
+    .view-section{display:none;width:100%;max-width:1100px;margin:0 auto;padding:clamp(16px,4vw,36px)}.view-section.active{display:block;animation:fadeUp .4s ease both}.card{background:rgba(255,254,250,.92);border:1px solid #dfe4d9;border-radius:var(--radius);padding:clamp(20px,4vw,34px);box-shadow:var(--shadow);margin-bottom:22px;backdrop-filter:blur(12px)}h1,h2,h3{font-family:'Prompt','IBM Plex Sans Thai',sans-serif;font-weight:600;letter-spacing:-.02em;line-height:1.3}h1{font-size:clamp(1.8rem,4vw,2.7rem)}h2{font-size:clamp(1.3rem,3vw,1.8rem)}h3{font-size:1.12rem}p{color:var(--ink-soft);line-height:1.75}.eyebrow{display:inline-flex;align-items:center;gap:8px;color:var(--green);font-size:.82rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px}.eyebrow:before{content:'';width:22px;height:2px;background:var(--gold)}.hero-heading{text-align:left;margin-bottom:10px}.hero-copy{max-width:640px}.auth-card{max-width:520px;margin:4vh auto;position:relative;overflow:hidden}.auth-card:before{content:'✳';position:absolute;right:22px;top:6px;font-size:5rem;color:#e8ddbb;opacity:.65;transform:rotate(12deg)}.brand-mark{width:58px;height:58px;display:grid;place-items:center;background:var(--green);color:#fff;border-radius:18px;font-size:1.8rem;margin-bottom:18px;box-shadow:0 10px 20px #245c4b25}.form-control,input[type=text],input[type=email],input[type=password]{width:100%;padding:13px 15px;border-radius:12px;border:1px solid #d5ddd2;background:#fffefa;color:var(--ink);font-size:1rem;margin-bottom:12px;transition:border .2s,box-shadow .2s}input::placeholder{color:#87958d}input:focus{border-color:var(--green-2);box-shadow:0 0 0 4px #34745e17;outline:0}.divider-text{text-align:center;margin:17px 0;color:#829087;font-size:.9rem}.status-pill{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:999px;background:var(--mint);color:var(--green);font-size:.84rem;font-weight:600}.status-pill:before{content:'';width:7px;height:7px;border-radius:50%;background:#4b9877}.panel-soft{background:linear-gradient(135deg,#edf5ec,#f8f2e2);padding:20px;border-radius:17px;border:1px solid #d9e5d8;margin-bottom:24px}.section-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:22px}.section-heading h2{margin:0}.muted{color:var(--ink-soft)}.inline-actions{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}.player-list{list-style:none;padding:0}.player-list li{padding:12px 4px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:12px}.player-list li:last-child{border-bottom:0}
+    .puzzle-board{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(2,minmax(80px,1fr));gap:clamp(6px,1.3vw,12px);width:100%;aspect-ratio:2.3/1;max-height:450px;perspective:1200px;margin:24px 0}.puzzle-tile{position:relative;border-radius:13px;cursor:pointer;user-select:none;min-width:0;min-height:0;transition:filter .2s}.puzzle-tile:hover:not(.flipped){filter:brightness(1.08);transform:translateY(-2px)}.tile-inner{position:relative;width:100%;height:100%;text-align:center;transition:transform .65s cubic-bezier(.2,.75,.25,1);transform-style:preserve-3d;border-radius:13px}.puzzle-tile.flipped .tile-inner{transform:rotateY(180deg)}.tile-front,.tile-back{position:absolute;inset:0;backface-visibility:hidden;border-radius:13px;overflow:hidden}.tile-front{background:linear-gradient(145deg,#2c6a56,#173f35);display:flex;align-items:center;justify-content:center;font-family:'Prompt',sans-serif;font-size:clamp(1.1rem,3vw,2rem);font-weight:700;color:#fff;border:1px solid #ffffff40;box-shadow:inset 0 0 0 1px #ffffff12,0 5px 12px #20332f18}.tile-front:after{content:'✳';position:absolute;font-size:clamp(2.5rem,6vw,5rem);opacity:.09;transform:rotate(-15deg)}.tile-back{transform:rotateY(180deg);background-size:500% 200%;border:2px solid #fff;box-shadow:0 4px 14px #20332f20}.tile-back:after{content:'';position:absolute;inset:0;box-shadow:inset 0 0 0 1px #20332f10}.game-topline{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}.score-card{background:var(--mint);padding:12px 16px;border-radius:14px;min-width:140px}.score-card strong{font-size:1.3rem;color:var(--green)}.game-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:9px}.category-badge{display:inline-flex;background:var(--gold-soft);color:#795b19;padding:5px 11px;border-radius:999px;font-size:.83rem;font-weight:600}.answer-row{display:flex;gap:10px;margin-top:20px}.answer-row input{margin:0;flex:1;min-width:0}.feedback{margin-top:14px;font-weight:600;text-align:center;min-height:28px;padding:8px;border-radius:12px}.feedback:not(:empty){background:var(--surface-2)}.answer-hint{font-size:.87rem;margin-top:8px}.podium-container{display:flex;justify-content:center;align-items:flex-end;gap:clamp(8px,2vw,18px);height:300px;margin:30px 0 10px}.podium-step{width:min(25%,150px);min-width:82px;border-radius:16px 16px 5px 5px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:5px;padding:14px 8px 10px;color:#fff;font-weight:600;transform:scaleY(0);transform-origin:bottom;opacity:.4;transition:transform .8s cubic-bezier(.175,.885,.32,1.275),opacity .4s}.podium-step.show{transform:scaleY(1);opacity:1}.podium-1{height:240px;background:linear-gradient(160deg,#e9bf59,#a87618);order:2;box-shadow:0 14px 30px #d8a94330}.podium-2{height:180px;background:linear-gradient(160deg,#aabbb7,#657b75);order:1}.podium-3{height:140px;background:linear-gradient(160deg,#ce9472,#975b3b);order:3}.podium-medal{font-size:1.8rem}.podium-name{max-width:100%;overflow-wrap:anywhere;text-align:center;font-size:.88rem}.podium-score{font-weight:700}.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;margin-top:16px}table{width:100%;border-collapse:collapse;min-width:480px;background:#fffefa}th,td{padding:13px 16px;text-align:left;border-bottom:1px solid var(--line)}th{background:#eef3eb;color:var(--green);font-weight:700}tbody tr:last-child td{border-bottom:0}tbody tr:nth-child(1) td:first-child{color:#a87618;font-weight:700}tbody tr:hover{background:#faf8f0}.results-title{text-align:center}.results-title p{margin-top:8px}.error-text{color:#b84e43;font-size:.9rem;margin-top:10px;text-align:center;min-height:20px}.empty-state{padding:20px;text-align:center;color:var(--ink-soft)}.footer-note{text-align:center;color:#7c8b81;font-size:.8rem;margin:18px 0 0}.btn-quiet{background:#edf1e9;color:var(--green)}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}@media(max-width:700px){.view-section{padding:14px}.card{border-radius:18px;padding:20px}.puzzle-board{gap:5px;aspect-ratio:1.35/1;grid-template-rows:repeat(2,minmax(76px,1fr))}.tile-front,.tile-back{border-radius:8px}.answer-row{flex-direction:column}.answer-row button{width:100%}.podium-container{height:250px}.podium-1{height:200px}.podium-2{height:150px}.podium-3{height:115px}.section-heading{align-items:flex-start}.score-card{min-width:unset}.game-topline{align-items:stretch}}@media(max-width:420px){.puzzle-board{grid-template-columns:repeat(5,minmax(0,1fr));aspect-ratio:1.05/1;grid-template-rows:repeat(2,minmax(65px,1fr))}.tile-front{font-size:1.1rem}.podium-name{font-size:.75rem}.podium-step{min-width:76px}.podium-container{gap:6px}}
+    @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
+  </style>
+</head>
+<body>
+
+  <!-- ================= 1. หน้าเข้าสู่ระบบ (AUTH VIEW) ================= -->
+  <section id="view-auth" class="view-section active">
+    <div class="card auth-card">
+      <div class="brand-mark" aria-hidden="true">✳</div>
+      <span class="eyebrow">HUSO · SOCIAL SCIENCE GAME</span>
+      <h1 class="hero-heading">Social Science<br>Arena</h1>
+      <p class="hero-copy" style="margin-bottom: 22px;">เกมเปิดภาพปริศนาที่ชวนสังเกต เชื่อมโยง และทายประเด็นทางสังคมศาสตร์ แข่งขันอย่างสนุก พร้อมเรียนรู้ไปด้วยกัน</p>
+      
+      <button id="btn-login-google" class="btn-google btn-full" style="margin-bottom: 16px;">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.15z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.15C3.26 21.36 7.35 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.27A7.195 7.195 0 0 1 4.9 12c0-.79.14-1.57.38-2.27V6.58H1.24C.45 8.15 0 9.99 0 12c0 2.01.45 3.85 1.24 5.42l4.04-3.15z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.35 0 3.26 2.64 1.24 6.58l4.04 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/></svg>
+        เข้าสู่ระบบด้วย Google
+      </button>
+
+      <div class="divider-text">— หรือเข้าสู่ระบบด้วยอีเมล —</div>
+
+      <input type="email" id="auth-email" placeholder="อีเมล (เช่น host123@gmail.com)">
+      <input type="password" id="auth-password" placeholder="รหัสผ่าน">
+      <button id="btn-login-email" class="btn-primary btn-full" style="margin-bottom: 8px;">เข้าสู่ระบบ</button>
+      <button id="btn-register-email" class="btn-primary btn-full" style="background: #334155;">สมัครสมาชิกใหม่</button>
+      <div id="auth-error" class="error-text" role="status" aria-live="polite"></div>
+      <p class="footer-note">คิดให้ลึก · เล่นให้สนุก · เข้าใจสังคมมากขึ้น</p>
+    </div>
+  </section>
+
+  <!-- ================= 2. หน้ารอเข้าห้อง (LOBBY VIEW) ================= -->
+  <section id="view-lobby" class="view-section">
+    <div class="card">
+      <span class="eyebrow">PLAY TOGETHER</span>
+      <div class="section-heading">
+        <h2 style="margin: 0;">Lobby การแข่งขัน</h2>
+        <span id="user-badge" class="status-pill"></span>
+      </div>
+
+      <div id="host-panel-lobby" class="panel-soft" style="display: none;">
+        <h3 style="color: var(--primary); text-align: left;">แผงควบคุมสำหรับโฮสต์ (Host Control)</h3>
+        <p style="margin-bottom: 12px;">คุณเข้าสู่ระบบด้วยบัญชีผู้ดูแลเกม สามารถเปิดห้องใหม่ได้ทันที</p>
+        <button id="btn-create-room" class="btn-primary">สร้างห้องแข่งขันใหม่</button>
+      </div>
+
+      <div>
+        <h3 style="margin-bottom:12px;">เข้าร่วมการแข่งขัน</h3>
+        <p style="margin-bottom:16px;">กรอกรหัสห้องจากผู้จัดเกม แล้วใช้ชื่อเล่นที่เพื่อนจำได้</p>
+        <input type="text" id="join-room-code" placeholder="ใส่รหัสห้อง 6 หลัก">
+        <input type="text" id="player-nickname" placeholder="ตั้งชื่อเล่นของคุณ">
+        <button id="btn-join-room" class="btn-success btn-full">เข้าห้องแข่งขัน</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 3. หน้าควบคุมของโฮสต์ (HOST DASHBOARD) ================= -->
+  <section id="view-host" class="view-section">
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>Host Dashboard: ห้อง <span id="host-room-code-display" style="color: var(--accent);"></span></h2>
+        <button id="btn-host-close" class="btn-danger" style="padding: 6px 12px;">ปิดห้อง</button>
+      </div>
+
+      <div class="inline-actions">
+        <button id="btn-host-start" class="btn-success">เริ่มการแข่งขัน (ข้อ 1)</button>
+        <button id="btn-host-next" class="btn-primary" style="display: none;">ไปยังข้อถัดไป</button>
+        <button id="btn-host-finish" class="btn-danger" style="display: none;">จบเกมและดูผลลัพธ์</button>
+      </div>
+
+      <div>
+        <h3>ผู้เข้าร่วมแข่งขัน (<span id="player-count">0</span> คน)</h3>
+        <ul id="player-list" class="player-list"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 4. หน้าจอเล่นเกม (GAMEPLAY VIEW) ================= -->
+  <section id="view-game" class="view-section">
+    <div class="card">
+      <div class="game-topline">
+        <div>
+          <h2 id="round-indicator" style="text-align: left; margin: 0;">ข้อที่ 1 / 10</h2>
+          <div class="game-meta"><span id="category-badge" class="category-badge">หมวดหมู่ทั่วไป</span><span class="muted" style="font-size:.85rem;">เปิดน้อย คะแนนยิ่งสูง</span></div>
+        </div>
+        <div class="score-card">
+          <div>คะแนนของคุณ</div><strong id="my-score">0</strong>
+          <div class="muted" style="font-size:.85rem;">เปิดแล้ว <span id="tiles-opened-count">0</span> / 10 ช่อง</div>
+        </div>
+      </div>
+
+      <!-- บอร์ดจิ๊กซอว์ 3D 10 ช่อง -->
+      <div class="puzzle-board" id="puzzle-board"></div>
+
+      <!-- ฟอร์มตอบคำถาม -->
+      <div class="answer-row">
+        <input type="text" id="answer-input" placeholder="พิมพ์คำตอบทายภาพที่นี่..." style="margin-bottom: 0;">
+        <button id="btn-submit-answer" class="btn-primary">ส่งคำตอบ</button>
+      </div>
+      <div id="game-feedback" class="feedback" role="status" aria-live="polite"></div>
+      <p class="answer-hint">คำใบ้: สังเกตรายละเอียดและบริบทของภาพก่อนส่งคำตอบ</p>
+    </div>
+  </section>
+
+  <!-- ================= 5. แท่นรางวัลและสรุปผล (RESULT VIEW) ================= -->
+  <section id="view-result" class="view-section">
+    <div class="card">
+      <div class="results-title"><span class="eyebrow">GAME COMPLETE</span><h1>🎉 สรุปผลการแข่งขัน</h1><p>ทุกคำตอบคืออีกหนึ่งมุมมองที่ทำให้เราเข้าใจสังคมมากขึ้น</p></div>
+
+      <div class="podium-container">
+        <!-- อันดับ 2 -->
+        <div id="podium-2" class="podium-step podium-2">
+          <div class="podium-medal">🥈</div>
+          <div id="p2-name" class="podium-name">-</div>
+          <div id="p2-score" style="font-size: 1.1rem; color: #f1f5f9;">0</div>
+        </div>
+        <!-- อันดับ 1 -->
+        <div id="podium-1" class="podium-step podium-1">
+          <div class="podium-medal">🥇</div>
+          <div id="p1-name" class="podium-name">-</div>
+          <div id="p1-score" style="font-size: 1.3rem; color: #fef08a;">0</div>
+        </div>
+        <!-- อันดับ 3 -->
+        <div id="podium-3" class="podium-step podium-3">
+          <div class="podium-medal">🥉</div>
+          <div id="p3-name" class="podium-name">-</div>
+          <div id="p3-score" style="font-size: 1.1rem; color: #fed7aa;">0</div>
+        </div>
+      </div>
+
+      <h3 style="text-align: left; margin-top: 30px;">ตารางคะแนนรวม</h3>
+      <div class="table-wrap"><table>
+        <thead>
+          <tr>
+            <th>อันดับ</th>
+            <th>ชื่อผู้เล่น</th>
+            <th>คะแนนรวม</th>
+            <th>ตอบถูก (ข้อ)</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard-body"></tbody>
+      </table></div>
+
+      <button id="btn-back-lobby" class="btn-primary" style="margin-top: 24px;">กลับหน้าแรก</button>
+    </div>
+  </section>
+
+  <!-- ================= FIREBASE & APP LOGIC ================= -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+      getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, 
+      signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { 
+      getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, 
+      collection, increment, runTransaction, getDocs, serverTimestamp 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // 1. ตั้งค่า Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyAxS0n5KAMT0r-Rdw7a3Rij6LKzh9bHvbY",
+      authDomain: "game-huso.firebaseapp.com",
+      projectId: "game-huso",
+      storageBucket: "game-huso.firebasestorage.app",
+      messagingSenderId: "33467430477",
+      appId: "1:33467430477:web:bec63fa7b10304a0f80e04"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // 2. ข้อมูลคำถาม 10 ภาพเบื้องต้น
+    const QUESTIONS = [
+      { round: 1, title: "บุคคลสำคัญด้านการพัฒนาประเทศ", category: "Development", img: "assets/images/q1.png", answers: ["รัชกาลที่ 9", "ในหลวงรัชกาลที่ 9", "ร.9", "ในหลวง", "พระบาทสมเด็จพระเจ้าอยู่หัวรัชกาลที่ 9"] },
+      { round: 2, title: "ผังเครือญาติ", category: "Anthropology", img: "assets/images/q2.png", answers: ["genogram", "จีโนแกรม", "ผังเครือญาติ"] },
+      { round: 3, title: "ความหลากหลายทางเพศ", category: "Human Rights", img: "assets/images/q3.png", answers: ["lgbtq+", "lgbt", "ธงสีรุ้ง", "ความหลากหลายทางเพศ"] },
+      { round: 4, title: "คนไร้บ้าน", category: "Social Problems", img: "assets/images/q4.png", answers: ["คนไร้บ้าน", "homeless", "homelessness"] },
+      { round: 5, title: "จิตอาสา", category: "Community", img: "assets/images/q5.png", answers: ["จิตอาสา", "volunteer", "อาสาสมัคร"] },
+      { round: 6, title: "อำนาจละมุน", category: "International", img: "assets/images/q6.png", answers: ["soft power", "อำนาจละมุน", "ซอฟต์พาวเวอร์"] },
+      { round: 7, title: "สังคมสูงวัย", category: "Demography", img: "assets/images/q7.png", answers: ["aging society", "สังคมสูงวัย", "สังคมผู้สูงอายุ"] },
+      { round: 8, title: "การกลั่นแกล้ง", category: "Social Issues", img: "assets/images/q8.png", answers: ["bullying", "การกลั่นแกล้ง", "บูลลี่"] },
+      { round: 9, title: "กระทรวง พม.", category: "Public Administration", img: "assets/images/q9.png", answers: ["พม", "กระทรวงการพัฒนาสังคมและความมั่นคงของมนุษย์", "พม."] },
+      { round: 10, title: "ปฏิทินชุมชน", category: "Community Studies", img: "assets/images/q10.png", answers: ["ปฏิทินชุมชน", "community calendar"] }
+    ];
+
+    // 3. Audio Manager สังเคราะห์เสียงผ่าน Web Audio API
+    class SoundEffects {
+      constructor() {
+        this.ctx = null;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+      }
+      playTone(freq, type, duration, delay = 0, gainLevel = 0.1) {
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime + delay);
+        gain.gain.setValueAtTime(gainLevel, this.ctx.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + delay + duration);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(this.ctx.currentTime + delay);
+        osc.stop(this.ctx.currentTime + delay + duration);
+      }
+      flip() { this.playTone(350, 'sine', 0.08); }
+      reveal() { this.playTone(523.25, 'triangle', 0.2); }
+      correct() {
+        this.playTone(523.25, 'sine', 0.12, 0);
+        this.playTone(659.25, 'sine', 0.12, 0.08);
+        this.playTone(783.99, 'sine', 0.2, 0.16);
+      }
+      wrong() {
+        this.playTone(220, 'sawtooth', 0.18, 0);
+        this.playTone(180, 'sawtooth', 0.25, 0.1);
+      }
+      fanfare() {
+        [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
+          this.playTone(f, 'triangle', 0.4, i * 0.14, 0.15);
+        });
+      }
+      step(r) { this.playTone(r === 1 ? 880 : (r === 2 ? 659.25 : 440), 'triangle', 0.3); }
+    }
+    const sfx = new SoundEffects();
+    document.addEventListener('click', event => { if (event.target.closest('button')) { try { sfx.init(); } catch (_) {} } }, {capture:true});
+
+    // 4. ตัวแปรสถานะ
+    let currentUser = null;
+    let currentRoomId = null;
+    let isHost = false;
+    let roomUnsubscribe = null;
+    let openedTiles = [];
+    let hasAnsweredCurrentRound = false;
+    let activeRoundNumber = null;
+    let playersUnsubscribe = null;
+    let resultShownFor = null;
+
+    function showError(id, message) { const el = document.getElementById(id); if (el) el.textContent = message; }
+    function friendlyError(err) {
+      const code = err?.code || '';
+      const messages = { 'auth/invalid-credential':'อีเมลหรือรหัสผ่านไม่ถูกต้อง', 'auth/email-already-in-use':'อีเมลนี้สมัครสมาชิกแล้ว', 'auth/weak-password':'รหัสผ่านควรมีอย่างน้อย 6 ตัวอักษร', 'auth/invalid-email':'รูปแบบอีเมลไม่ถูกต้อง', 'auth/popup-closed-by-user':'ปิดหน้าต่างเข้าสู่ระบบก่อนดำเนินการเสร็จ', 'permission-denied':'ไม่มีสิทธิ์ดำเนินการ กรุณาตรวจสอบ Firestore Rules', 'unavailable':'เชื่อมต่อระบบไม่ได้ กรุณาลองอีกครั้ง' };
+      return messages[code] || err?.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่';
+    }
+    function escapeHtml(value) { return String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+    async function updateMyScore(roomId) {
+      if (!currentUser) return;
+      try { const snap = await getDoc(doc(db, 'rooms', roomId, 'players', currentUser.uid)); if (snap.exists()) document.getElementById('my-score').textContent = Number(snap.data().score || 0).toLocaleString(); } catch (_) {}
+    }
+
+    // ระบบสลับหน้า View
+    function switchView(viewId) {
+      document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+      const target = document.getElementById(viewId); if (target) target.classList.add('active');
+    }
+
+    // 5. การจัดการสิทธิ์และ Authentication
+    onAuthStateChanged(auth, user => {
+      currentUser = user;
+      if (user) {
+        isHost = (user.email === "host123@gmail.com"); // Prototype only: replace with verified custom claims before production.
+        document.getElementById('user-badge').textContent = `${user.email || 'ผู้เล่นทั่วไป'} (${isHost ? 'Host' : 'Player'})`;
+        document.getElementById('host-panel-lobby').style.display = isHost ? 'block' : 'none';
+        switchView('view-lobby');
+      } else {
+        switchView('view-auth');
+      }
+    });
+
+    // Google Sign-in
+    document.getElementById('btn-login-google').addEventListener('click', async () => {
+      try {
+        await signInWithPopup(auth, new GoogleAuthProvider());
+      } catch (err) {
+        document.getElementById('auth-error').textContent = err.message;
+      }
+    });
+
+    // Email/Password Login
+    document.getElementById('btn-login-email').addEventListener('click', async () => {
+      const email = document.getElementById('auth-email').value;
+      const pass = document.getElementById('auth-password').value;
+      try {
+        await signInWithEmailAndPassword(auth, email, pass);
+      } catch (err) {
+        document.getElementById('auth-error').textContent = err.message;
+      }
+    });
+
+    // Register Email
+    document.getElementById('btn-register-email').addEventListener('click', async () => {
+      const email = document.getElementById('auth-email').value;
+      const pass = document.getElementById('auth-password').value;
+      try {
+        await createUserWithEmailAndPassword(auth, email, pass);
+      } catch (err) {
+        document.getElementById('auth-error').textContent = err.message;
+      }
+    });
+
+    // 6. การสร้างและเข้าร่วมห้องแข่งขัน
+    document.getElementById('btn-create-room').addEventListener('click', async () => {
+      if (!currentUser || !isHost) return showError('auth-error', 'บัญชีนี้ไม่มีสิทธิ์สร้างห้อง');
+      const btn = document.getElementById('btn-create-room'); btn.disabled = true;
+      try {
+        let roomCode, roomRef, attempts = 0;
+        do { roomCode = String(Math.floor(100000 + Math.random() * 900000)); roomRef = doc(db, 'rooms', roomCode); attempts++; }
+        while ((await getDoc(roomRef)).exists() && attempts < 8);
+        if (attempts >= 8 && (await getDoc(roomRef)).exists()) throw new Error('ไม่สามารถสร้างรหัสห้องได้ กรุณาลองใหม่');
+        currentRoomId = roomCode;
+        await setDoc(roomRef, { roomCode, hostUid: currentUser.uid, hostEmail: currentUser.email, status: 'WAITING', currentRound: 1, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+        document.getElementById('host-room-code-display').textContent = roomCode;
+        document.getElementById('btn-host-start').style.display = 'inline-flex';
+        document.getElementById('btn-host-next').style.display = 'none';
+        document.getElementById('btn-host-finish').style.display = 'none';
+        switchView('view-host'); listenToRoom(roomCode);
+      } catch(err) { showError('auth-error', friendlyError(err)); }
+      finally { btn.disabled = false; }
+    });
+
+    document.getElementById('btn-join-room').addEventListener('click', async () => {
+      const roomCode = document.getElementById('join-room-code').value.trim();
+      const nickname = document.getElementById('player-nickname').value.trim();
+      if (!roomCode || !/^\d{6}$/.test(roomCode)) return alert('กรุณากรอกรหัสห้อง 6 หลัก');
+      if (!currentUser) return alert('กรุณาเข้าสู่ระบบก่อนเข้าร่วมเกม');
+      try {
+        const roomRef = doc(db, 'rooms', roomCode); const roomSnap = await getDoc(roomRef);
+        if (!roomSnap.exists()) return alert('ไม่พบห้องแข่งขันนี้');
+        const room = roomSnap.data(); if (room.status === 'FINISHED' || room.status === 'CLOSED') return alert('ห้องนี้จบการแข่งขันแล้ว');
+        if (room.status === 'PLAYING') return alert('เกมเริ่มไปแล้ว ไม่สามารถเข้าร่วมระหว่างเกมได้');
+        if (!nickname) return alert('กรุณาตั้งชื่อเล่นก่อนเข้าร่วม');
+        currentRoomId = roomCode;
+        await setDoc(doc(db, 'rooms', roomCode, 'players', currentUser.uid), { uid: currentUser.uid, name: nickname.slice(0, 24), score: 0, correctCount: 0, joinedAt: serverTimestamp() }, { merge: true });
+        document.getElementById('host-room-code-display').textContent = roomCode;
+        switchView('view-host');
+        document.querySelector('#view-host h2').textContent = `ห้องรอเริ่มเกม ${roomCode}`;
+        document.getElementById('btn-host-start').style.display = 'none'; document.getElementById('btn-host-next').style.display = 'none'; document.getElementById('btn-host-finish').style.display = 'none'; document.getElementById('btn-host-close').style.display = 'none';
+        listenToRoom(roomCode);
+      } catch(err) { alert(friendlyError(err)); }
+    });
+
+    // 7. Realtime Room Listener
+    function listenToRoom(roomId) {
+      if (roomUnsubscribe) roomUnsubscribe();
+
+      roomUnsubscribe = onSnapshot(doc(db, "rooms", roomId), snap => {
+        if (!snap.exists()) return;
+        const room = snap.data();
+
+        // Host จัดการหน้าจอ
+        if (isHost && room.status === "WAITING") {
+          switchView('view-host');
+        }
+
+        // เริ่มเกม หรือเปลี่ยนรอบ
+        if (room.status === "WAITING" && !isHost) switchView('view-host');
+        if (room.status === "PLAYING") {
+          switchView('view-game');
+          if (activeRoundNumber !== room.currentRound) setupRound(room.currentRound);
+          updateMyScore(roomId);
+        }
+        if (room.status === "FINISHED" || room.status === "CLOSED") {
+          switchView('view-result');
+          if (resultShownFor !== roomId) { resultShownFor = roomId; showResults(roomId); }
+        }
+      });
+
+      // ดึงรายชื่อผู้เล่นในห้องแบบ Realtime
+      if (playersUnsubscribe) playersUnsubscribe();
+      playersUnsubscribe = onSnapshot(collection(db, "rooms", roomId, "players"), snapshot => {
+        const players = [];
+        snapshot.forEach(d => players.push(d.data()));
+        document.getElementById('player-count').textContent = players.length;
+        
+        const list = document.getElementById('player-list');
+        list.innerHTML = players.map(p => `
+          <li>
+            <span>${escapeHtml(p.name || 'ผู้เล่น')}</span>
+            <span style="color: var(--green); font-weight: bold;">${Number(p.score || 0).toLocaleString()} คะแนน</span>
+          </li>
+        `).join('');
+      });
+    }
+
+    // 8. การทำงานฝั่ง Host
+    document.getElementById('btn-host-start').addEventListener('click', async () => {
+      await updateDoc(doc(db, "rooms", currentRoomId), { status: "PLAYING", currentRound: 1, updatedAt: serverTimestamp() });
+      document.getElementById('btn-host-start').style.display = 'none';
+      document.getElementById('btn-host-next').style.display = 'inline-flex';
+    });
+
+    document.getElementById('btn-host-next').addEventListener('click', async () => {
+      const roomSnap = await getDoc(doc(db, "rooms", currentRoomId));
+      const current = roomSnap.data().currentRound;
+      if (current < 10) {
+        await updateDoc(doc(db, "rooms", currentRoomId), { currentRound: current + 1, updatedAt: serverTimestamp() });
+        if (current + 1 === 10) {
+          document.getElementById('btn-host-next').style.display = 'none';
+          document.getElementById('btn-host-finish').style.display = 'inline-flex';
+        }
+      }
+    });
+
+    document.getElementById('btn-host-finish').addEventListener('click', async () => {
+      await updateDoc(doc(db, "rooms", currentRoomId), { status: "FINISHED", updatedAt: serverTimestamp() });
+    });
+
+    document.getElementById('btn-host-close').addEventListener('click', async () => {
+      if (confirm('ต้องการปิดห้องแข่งขันหรือไม่?')) {
+        await updateDoc(doc(db, "rooms", currentRoomId), { status: "FINISHED", updatedAt: serverTimestamp() });
+        location.reload();
+      }
+    });
+
+    // 9. ระบบกระดานจิ๊กซอว์ 3D ในหน้า Gameplay
+    function setupRound(roundNumber) {
+      if (!Number.isInteger(roundNumber) || roundNumber < 1 || roundNumber > QUESTIONS.length) return;
+      activeRoundNumber = roundNumber;
+      openedTiles = [];
+      hasAnsweredCurrentRound = false;
+      const q = QUESTIONS[roundNumber - 1];
+
+      document.getElementById('round-indicator').textContent = `ข้อที่ ${roundNumber} / 10`;
+      document.getElementById('category-badge').textContent = `หมวดหมู่: ${q.category}`;
+      document.getElementById('tiles-opened-count').textContent = '0';
+      document.getElementById('game-feedback').textContent = '';
+      document.getElementById('answer-input').value = '';
+      document.getElementById('answer-input').disabled = false;
+      document.getElementById('btn-submit-answer').disabled = false;
+
+      const board = document.getElementById('puzzle-board');
+      board.innerHTML = '';
+
+      // สร้างแผ่น 10 ช่อง (5 คอลัมน์ x 2 แถว)
+      for (let i = 0; i < 10; i++) {
+        const col = i % 5;
+        const row = Math.floor(i / 5);
+
+        const tile = document.createElement('div');
+        tile.className = 'puzzle-tile';
+        tile.dataset.index = i;
+
+        tile.innerHTML = `
+          <div class="tile-inner">
+            <div class="tile-front">${i + 1}</div>
+            <div class="tile-back" style="
+              background-image: url('${q.img}');
+              background-position: ${col * 25}% ${row * 100}%;
+            "></div>
+          </div>
+        `;
+
+        tile.addEventListener('click', () => handleTileClick(i, tile));
+        board.appendChild(tile);
+      }
+    }
+
+    function handleTileClick(index, tileEl) {
+      if (tileEl.classList.contains('flipped')) return;
+
+      sfx.flip();
+      tileEl.classList.add('flipped');
+      openedTiles.push(index);
+      document.getElementById('tiles-opened-count').textContent = openedTiles.length;
+      setTimeout(() => sfx.reveal(), 300);
+    }
+
+    // 10. ระบบตรวจคำตอบและคำนวณคะแนน
+    document.getElementById('btn-submit-answer').addEventListener('click', async () => {
+      if (hasAnsweredCurrentRound) return;
+      if (!currentRoomId || !currentUser) return;
+      const input = document.getElementById('answer-input').value.trim().toLowerCase();
+      if (!input) return;
+
+      const roomSnap = await getDoc(doc(db, "rooms", currentRoomId));
+      const roundNum = roomSnap.data().currentRound;
+      const q = QUESTIONS[roundNum - 1];
+
+      const normalize = value => value.toLocaleLowerCase('th-TH').replace(/[\s.\-–—]/g, '').trim();
+      const isMatch = q.answers.some(ans => normalize(ans) === normalize(input));
+      const feedback = document.getElementById('game-feedback');
+
+      if (isMatch) {
+        hasAnsweredCurrentRound = true;
+        sfx.correct();
+        
+        // สูตรคะแนน: 1100 - (100 * จำนวนช่องที่เปิด) โดยขั้นต่ำคือ 100
+        const opened = Math.min(10, Math.max(1, openedTiles.length));
+        const earnedScore = Math.max(100, 1100 - (100 * opened));
+
+        feedback.style.color = 'var(--success)';
+        feedback.textContent = `ถูกต้อง! +${earnedScore} คะแนน (เปิดไป ${opened} ช่อง)`;
+
+        document.getElementById('answer-input').disabled = true;
+        document.getElementById('btn-submit-answer').disabled = true;
+
+        // บันทึกคะแนนลง Firestore
+        const playerRef = doc(db, "rooms", currentRoomId, "players", currentUser.uid);
+        await updateDoc(playerRef, { score: increment(earnedScore), correctCount: increment(1) });
+
+        // อัปเดต UI คะแนนผู้เล่นปัจจุบัน
+        const updated = await getDoc(playerRef);
+        document.getElementById('my-score').textContent = updated.data().score;
+      } else {
+        sfx.wrong();
+        feedback.style.color = 'var(--danger)';
+        feedback.textContent = 'ยังไม่ถูกต้อง ลองสังเกตภาพใหม่อีกครั้ง!';
+      }
+    });
+
+    document.getElementById('answer-input').addEventListener('keydown', event => { if (event.key === 'Enter') document.getElementById('btn-submit-answer').click(); });
+
+    // 11. หน้าสรุปผลแท่นรางวัล (Podium)
+    async function showResults(roomId) {
+      ['podium-1','podium-2','podium-3'].forEach(id => document.getElementById(id).classList.remove('show'));
+      // ดึงคะแนนผู้เล่นทั้งหมดแล้วเรียงลำดับ
+      const pSnapshot = await getDocs(collection(db, "rooms", roomId, "players"));
+      const players = [];
+      pSnapshot.forEach(d => players.push(d.data()));
+      players.sort((a, b) => (Number(b.score) || 0) - (Number(a.score) || 0) || (Number(b.correctCount) || 0) - (Number(a.correctCount) || 0) || String(a.name || '').localeCompare(String(b.name || ''), 'th'));
+      if (!players.length) document.getElementById('leaderboard-body').innerHTML = '<tr><td colspan="4" class="empty-state">ยังไม่มีผู้เข้าร่วมการแข่งขัน</td></tr>'; 
+      document.getElementById('p1-name').textContent = players[0]?.name || 'ยังไม่มีผู้เล่น';
+      document.getElementById('p1-score').textContent = players[0] ? `${Number(players[0].score || 0).toLocaleString()} คะแนน` : '—';
+      if (!players[1]) { document.getElementById('p2-name').textContent = '—'; document.getElementById('p2-score').textContent = '—'; }
+      if (!players[2]) { document.getElementById('p3-name').textContent = '—'; document.getElementById('p3-score').textContent = '—'; }
+
+      // แอนิเมชันเปิดตัวแท่นรางวัลตามลำดับ 3 -> 2 -> 1
+      setTimeout(() => {
+        if (players[2]) {
+          document.getElementById('podium-3').classList.add('show');
+          document.getElementById('p3-name').textContent = players[2].name;
+          document.getElementById('p3-score').textContent = `${Number(players[2].score || 0).toLocaleString()} คะแนน`;
+          sfx.step(3);
+        }
+      }, 600);
+
+      setTimeout(() => {
+        if (players[1]) {
+          document.getElementById('podium-2').classList.add('show');
+          document.getElementById('p2-name').textContent = players[1].name;
+          document.getElementById('p2-score').textContent = `${Number(players[1].score || 0).toLocaleString()} คะแนน`;
+          sfx.step(2);
+        }
+      }, 1400);
+
+      setTimeout(() => {
+        if (players[0]) {
+          document.getElementById('podium-1').classList.add('show');
+          document.getElementById('p1-name').textContent = players[0].name;
+          document.getElementById('p1-score').textContent = `${Number(players[0].score || 0).toLocaleString()} คะแนน`;
+          sfx.step(1);
+          sfx.fanfare();
+        }
+      }, 2200);
+
+      // สร้างตารางสรุปผล
+      const tbody = document.getElementById('leaderboard-body');
+      tbody.innerHTML = players.length ? players.map((p, idx) => `
+        <tr>
+          <td>${idx + 1}</td>
+          <td>${escapeHtml(p.name || 'ผู้เล่น')}</td>
+          <td style="color: var(--green); font-weight: bold;">${Number(p.score || 0).toLocaleString()}</td>
+          <td>${Number(p.correctCount || 0)}</td>
+        </tr>
+      `).join('') : '<tr><td colspan="4" class="empty-state">ยังไม่มีผู้เข้าร่วมการแข่งขัน</td></tr>';
+    }
+
+    document.getElementById('btn-back-lobby').addEventListener('click', async () => {
+      if (roomUnsubscribe) roomUnsubscribe(); if (playersUnsubscribe) playersUnsubscribe();
+      currentRoomId = null; activeRoundNumber = null; resultShownFor = null;
+      document.getElementById('btn-host-close').style.display = 'inline-flex';
+      if (currentUser) switchView('view-lobby'); else switchView('view-auth');
+    });
+  </script>
+</body>
+</html>
