@@ -17,7 +17,43 @@
     .app-sidebar{position:fixed;z-index:50;left:0;top:0;bottom:0;width:232px;padding:24px 16px;background:rgba(255,254,250,.94);border-right:1px solid var(--line);backdrop-filter:blur(18px);display:flex;flex-direction:column;gap:18px;box-shadow:8px 0 30px rgba(32,51,47,.04)}
     .sidebar-brand{display:flex;align-items:center;gap:11px;padding:4px 7px 18px;border-bottom:1px solid var(--line)}.sidebar-brand .brand-mark{width:42px;height:42px;min-width:42px;border-radius:13px;margin:0;font-size:1.3rem}.sidebar-brand strong{font-family:'Prompt',sans-serif;line-height:1.2;display:block}.sidebar-brand small{color:var(--ink-soft);font-size:.74rem}
     .sidebar-label{font-size:.72rem;font-weight:700;color:#87958d;letter-spacing:.08em;padding:0 10px;text-transform:uppercase}.sidebar-nav{display:grid;gap:6px}.sidebar-nav button{justify-content:flex-start;text-align:left;background:transparent;color:var(--ink-soft);padding:12px 13px;border-radius:12px;font-weight:500}.sidebar-nav button:hover,.sidebar-nav button.active{background:var(--mint);color:var(--green)}.sidebar-nav button .nav-icon{width:23px;text-align:center;font-size:1.08rem}.sidebar-bottom{margin-top:auto;border-top:1px solid var(--line);padding-top:14px}.sidebar-user{padding:9px 10px;color:var(--ink-soft);font-size:.82rem;overflow-wrap:anywhere}.sidebar-user strong{display:block;color:var(--ink);font-size:.9rem}.sidebar-toggle{display:none;position:fixed;z-index:70;top:12px;left:12px;background:var(--green);color:#fff;padding:10px 13px;box-shadow:var(--shadow)}
-    .view-section{max-width:1180px}.lobby-banner{position:relative;min-height:270px;overflow:hidden;border-radius:22px;margin-bottom:24px;padding:clamp(24px,4vw,42px);display:flex;align-items:center;background:linear-gradient(105deg,rgba(18,57,46,.95),rgba(36,92,75,.75)),url('assets/images/q3.png') center/cover;color:#fff;box-shadow:var(--shadow)}.lobby-banner:after{content:'✳';position:absolute;right:5%;top:-35%;font-size:18rem;color:#fff;opacity:.07;pointer-events:none}.banner-copy{position:relative;z-index:1;max-width:640px}.lobby-banner .eyebrow{color:#ffe4a3}.lobby-banner h1{font-size:clamp(2rem,4vw,3rem);margin-bottom:10px}.lobby-banner p{color:#e8f0e8;max-width:560px}.banner-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}.btn-gold{background:var(--gold);color:#2f3c2f}.banner-editor{margin-top:18px;padding:18px;border:1px dashed #c9d7c8;border-radius:16px;background:#f7f8f1}.banner-editor-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.banner-editor-grid label{display:block;font-size:.85rem;font-weight:600;margin-bottom:5px}.banner-preview{height:95px;border-radius:12px;background:center/cover no-repeat #dfe9dc;margin:8px 0 12px;border:1px solid var(--line)}.profile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.profile-stat{background:#f0f4ec;border:1px solid var(--line);padding:18px;border-radius:16px}.profile-stat strong{display:block;font-size:1.5rem;color:var(--green)}.history-item{display:flex;justify-content:space-between;gap:14px;align-items:center;padding:15px 0;border-bottom:1px solid var(--line)}.history-item:last-child{border-bottom:0}.history-item strong{display:block}.history-meta{font-size:.85rem;color:var(--ink-soft)}
+    .view-section{max-width:1180px}.lobby-banner{position:relative;min-height:270px;overflow:hidden;border-radius:22px;margin-bottom:24px;padding:clamp(24px,4vw,42px);display:flex;align-items:center;background:linear-gradient(105deg,rgba(18,57,46,.95),rgba(36,92,75,.75)),url('assets/images/q3.png') center/cover;color:#fff;box-shadow:var(--shadow)}.lobby-banner:after{content:'✳';position:absolute;right:5%;top:-35%;font-size:18rem;color:#fff;opacity:.07;pointer-events:none;z-index:1}.lobby-banner:before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(3,38,31,.92),rgba(3,38,31,.55) 48%,rgba(3,38,31,.06));z-index:1;pointer-events:none}.lobby-banner .banner-copy{z-index:2}.lobby-banner .banner-actions{position:relative}.banner-copy{position:relative;z-index:1;max-width:640px}.lobby-banner .eyebrow{color:#ffe4a3}.lobby-banner h1{font-size:clamp(2rem,4vw,3rem);margin-bottom:10px}.lobby-banner p{color:#e8f0e8;max-width:560px}.banner-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}.btn-gold{background:var(--gold);color:#2f3c2f}.banner-editor{margin-top:18px;padding:18px;border:1px dashed #c9d7c8;border-radius:16px;background:#f7f8f1}.banner-editor-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.banner-editor-grid label{display:block;font-size:.85rem;font-weight:600;margin-bottom:5px}.banner-preview{height:95px;border-radius:12px;background:center/cover no-repeat #dfe9dc;margin:8px 0 12px;border:1px solid var(--line)}.profile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.profile-stat{background:#f0f4ec;border:1px solid var(--line);padding:18px;border-radius:16px}.profile-stat strong{display:block;font-size:1.5rem;color:var(--green)}.history-item{display:flex;justify-content:space-between;gap:14px;align-items:center;padding:15px 0;border-bottom:1px solid var(--line)}.history-item:last-child{border-bottom:0}.history-item strong{display:block}.history-meta{font-size:.85rem;color:var(--ink-soft)}
+
+    .sidebar-subnav{display:none;margin:-2px 0 5px 36px;padding-left:10px;border-left:2px solid #dce5d9;gap:4px}
+    .sidebar-subnav.open{display:grid}
+    .sidebar-subnav button{font-size:.88rem;padding:9px 10px}
+    .banner-custom-card{overflow:hidden}
+    .banner-manager-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+    .banner-field label{display:block;font-weight:600;font-size:.88rem;margin-bottom:6px}
+    .banner-field input,.banner-field select,.banner-field textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:#fffefa;color:var(--ink);margin-bottom:12px}
+    .banner-field textarea{min-height:78px;resize:vertical}
+    .banner-stage{position:relative;min-height:260px;border-radius:18px;overflow:hidden;background:#073d31;margin:14px 0;color:white;isolation:isolate}
+    .banner-stage-media{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}
+    .banner-stage:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(3,38,31,.92),rgba(3,38,31,.58) 44%,rgba(3,38,31,.04));z-index:-1;pointer-events:none}
+    .banner-stage-copy{position:relative;z-index:1;max-width:62%;padding:clamp(22px,4vw,40px)}
+    .banner-stage-copy h1{font-size:clamp(1.6rem,3vw,2.6rem);margin:10px 0;color:white}
+    .banner-stage-copy p{color:#e1eee5}
+    .banner-stage .eyebrow{color:#ffdf94}
+    .banner-dots{position:absolute;bottom:13px;right:18px;display:flex;gap:7px;z-index:2}
+    .banner-dots button{padding:0;width:9px;height:9px;min-width:9px;border-radius:50%;background:#ffffff80;box-shadow:none}
+    .banner-dots button.active{background:#f0c45e;transform:scale(1.3)}
+    .banner-list{display:grid;gap:9px;margin:14px 0}
+    .banner-list-item{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:12px;background:#fffefa}
+    .banner-list-item img{width:74px;height:48px;object-fit:cover;border-radius:7px;background:#e5eadf}
+    .banner-list-item .item-info{flex:1;min-width:0}.banner-list-item .item-info strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.banner-list-item .item-info small{color:var(--ink-soft)}
+    .banner-list-item button{padding:7px 10px;font-size:.8rem}
+    .banner-tools{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}
+    .banner-hint{font-size:.82rem;margin:0 0 10px}
+    .crop-modal{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;background:#0d211dcc;padding:18px}
+    .crop-modal.open{display:flex}
+    .crop-dialog{width:min(760px,100%);max-height:92vh;overflow:auto;background:#fffefa;color:var(--ink);border-radius:20px;padding:22px;box-shadow:0 25px 90px #0005}
+    .crop-workspace{background:#182b26;border-radius:14px;padding:10px;display:flex;justify-content:center;align-items:center;min-height:180px;max-height:55vh;overflow:hidden}
+    #crop-canvas{display:block;max-width:100%;max-height:52vh;object-fit:contain}
+    .crop-controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:12px 0}
+    .crop-controls label{font-size:.88rem;font-weight:600}
+    .crop-controls select,.crop-controls input{padding:8px;border:1px solid var(--line);border-radius:8px}
+    @media(max-width:850px){.banner-manager-grid{grid-template-columns:1fr}.banner-stage-copy{max-width:85%}.banner-stage{min-height:280px}}
+
     @media(max-width:850px){body{padding-left:0}.app-sidebar{width:260px;transform:translateX(-105%);transition:transform .25s ease;box-shadow:18px 0 50px #20332f22}.app-sidebar.open{transform:translateX(0)}.sidebar-toggle{display:inline-flex}.view-section{padding-top:66px}.banner-editor-grid,.profile-grid{grid-template-columns:1fr}}
     @media(min-width:851px){.sidebar-toggle{display:none}}
     @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}@media(max-width:700px){.view-section{padding:14px}.card{border-radius:18px;padding:20px}.puzzle-board{gap:5px;aspect-ratio:1.35/1;grid-template-rows:repeat(2,minmax(76px,1fr))}.tile-front,.tile-back{border-radius:8px}.answer-row{flex-direction:column}.answer-row button{width:100%}.podium-container{height:250px}.podium-1{height:200px}.podium-2{height:150px}.podium-3{height:115px}.section-heading{align-items:flex-start}.score-card{min-width:unset}.game-topline{align-items:stretch}}@media(max-width:420px){.puzzle-board{grid-template-columns:repeat(5,minmax(0,1fr));aspect-ratio:1.05/1;grid-template-rows:repeat(2,minmax(65px,1fr))}.tile-front{font-size:1.1rem}.podium-name{font-size:.75rem}.podium-step{min-width:76px}.podium-container{gap:6px}}
@@ -34,6 +70,8 @@
       <button id="nav-lobby" class="active"><span class="nav-icon">⌂</span>หน้าล็อบบี้</button>
       <button id="nav-profile"><span class="nav-icon">♙</span>โปรไฟล์ของฉัน</button>
       <button id="nav-history"><span class="nav-icon">◷</span>ประวัติการเล่น</button>
+      <button id="nav-customize-toggle" aria-expanded="false"><span class="nav-icon">⚙</span>ปรับแต่ง <span style="margin-left:auto">⌄</span></button>
+      <div class="sidebar-subnav" id="nav-customize-subnav"><button id="nav-banner-manager">▧ จัดการแบนเนอร์</button></div>
     </nav>
     <div class="sidebar-bottom">
       <div class="sidebar-user" id="sidebar-user"><strong>ยังไม่ได้เข้าสู่ระบบ</strong>เข้าสู่ระบบเพื่อบันทึกประวัติ</div>
@@ -57,7 +95,7 @@
 
       <div class="divider-text">— หรือเข้าสู่ระบบด้วยอีเมล —</div>
 
-      <input type="email" id="auth-email" placeholder="อีเมล (เช่น host123@gmail.com)">
+      <input type="email" id="auth-email" placeholder="อีเมล (เช่น 123@gmail.com)">
       <input type="password" id="auth-password" placeholder="รหัสผ่าน">
       <button id="btn-login-email" class="btn-primary btn-full" style="margin-bottom: 8px;">เข้าสู่ระบบ</button>
       <button id="btn-register-email" class="btn-primary btn-full" style="background: #334155;">สมัครสมาชิกใหม่</button>
@@ -69,18 +107,7 @@
   <!-- ================= 2. หน้ารอเข้าห้อง (LOBBY VIEW) ================= -->
   <section id="view-lobby" class="view-section">
     <div class="lobby-banner" id="lobby-banner">
-      <div class="banner-copy"><span class="eyebrow">HUSO · SOCIAL SCIENCE GAME</span><h1 id="banner-title">เปิดภาพ ค้นความหมาย เข้าใจสังคม</h1><p id="banner-subtitle">เกมทายภาพจิ๊กซอว์ที่เปลี่ยนแนวคิดทางสังคมศาสตร์ให้เป็นการแข่งขันที่สนุก เรียนรู้ไปพร้อมกับเพื่อน ๆ</p><div class="banner-actions"><button class="btn-gold" id="btn-banner-play">เข้าร่วมการแข่งขัน <span aria-hidden="true">→</span></button><span class="status-pill">10 ภาพ · เล่นเป็นทีมได้</span></div></div>
-    </div>
-    <div class="card" id="host-banner-editor" style="display:none">
-      <div class="section-heading"><div><span class="eyebrow">HOST CUSTOMIZATION</span><h2>ปรับแต่งแบนเนอร์หน้า Lobby</h2></div><span class="status-pill">เฉพาะ Host</span></div>
-      <p style="margin-bottom:14px">เปลี่ยนหัวข้อ คำโปรย และภาพตัวอย่างที่ผู้เล่นเห็นหน้าแรกได้ ภาพใช้ URL สาธารณะหรือพาธรูปในเว็บไซต์ เช่น assets/images/q1.png</p>
-      <div class="banner-editor-grid">
-        <div><label for="banner-title-input">หัวข้อแบนเนอร์</label><input id="banner-title-input" type="text" maxlength="90" placeholder="เปิดภาพ ค้นความหมาย เข้าใจสังคม"></div>
-        <div><label for="banner-image-input">URL หรือพาธภาพ</label><input id="banner-image-input" type="text" maxlength="500" placeholder="assets/images/q1.png"></div>
-        <div style="grid-column:1/-1"><label for="banner-subtitle-input">คำอธิบาย</label><input id="banner-subtitle-input" type="text" maxlength="220" placeholder="รายละเอียดสั้น ๆ ของเกม"></div>
-      </div>
-      <div id="banner-preview" class="banner-preview" aria-label="ตัวอย่างภาพแบนเนอร์"></div>
-      <div class="inline-actions" style="margin:0"><button id="btn-banner-preview" class="btn-quiet">ดูตัวอย่าง</button><button id="btn-banner-save" class="btn-primary">บันทึกแบนเนอร์</button><span id="banner-save-status" class="muted" role="status"></span></div>
+      <img id="lobby-banner-image" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0" src="assets/images/social-science-jigsaw-banner.png"><video id="lobby-banner-video" muted playsinline loop style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0"></video><div class="banner-copy"><span class="eyebrow">HUSO · SOCIAL SCIENCE GAME</span><h1 id="banner-title">เปิดภาพ ค้นความหมาย เข้าใจสังคม</h1><p id="banner-subtitle">เกมทายภาพจิ๊กซอว์ที่เปลี่ยนแนวคิดทางสังคมศาสตร์ให้เป็นการแข่งขันที่สนุก เรียนรู้ไปพร้อมกับเพื่อน ๆ</p><div class="banner-actions"><button class="btn-gold" id="btn-banner-play">เข้าร่วมการแข่งขัน <span aria-hidden="true">→</span></button><span class="status-pill">10 ภาพ · เล่นเป็นทีมได้</span></div></div>
     </div>
     <div class="card">
       <span class="eyebrow">PLAY TOGETHER</span>
@@ -104,6 +131,61 @@
       </div>
     </div>
   </section>
+
+
+  <!-- ================= จัดการแบนเนอร์ (Host only) ================= -->
+  <section id="view-customize" class="view-section">
+    <div class="card banner-custom-card">
+      <span class="eyebrow">HOST STUDIO · LOBBY EXPERIENCE</span>
+      <h1>ปรับแต่งแบนเนอร์</h1>
+      <p style="margin:8px 0 16px">จัดการสไลด์ภาพและวิดีโอหน้า Lobby เพิ่ม ลบ แก้ไข เลือกอัตราส่วน และตั้งเวลาเปลี่ยนสไลด์ได้</p>
+      <div id="banner-manager-access" class="status-pill">เฉพาะ Host ที่ได้รับอนุญาต</div>
+      <div class="banner-stage" id="banner-stage">
+        <img id="banner-stage-image" class="banner-stage-media" src="assets/images/social-science-jigsaw-banner.png" alt="" />
+        <video id="banner-stage-video" class="banner-stage-media" muted playsinline loop style="display:none"></video>
+        <div class="banner-stage-copy"><span class="eyebrow">HUSO · SOCIAL SCIENCE GAME</span><h1 id="banner-stage-title">เปิดภาพ ค้นความหมาย เข้าใจสังคม</h1><p id="banner-stage-subtitle">ต่อจิ๊กซอว์แห่งความคิด แล้วค้นพบเรื่องราวของสังคมไปด้วยกัน</p></div>
+        <div id="banner-dots" class="banner-dots"></div>
+      </div>
+      <div id="banner-list" class="banner-list"></div>
+      <div class="banner-tools">
+        <button id="btn-banner-add-image" class="btn-primary">＋ เพิ่มแบนเนอร์ภาพ</button>
+        <button id="btn-banner-add-video" class="btn-quiet">＋ เพิ่มแบนเนอร์วิดีโอ</button>
+        <button id="btn-banner-save-all" class="btn-primary">บันทึกแบนเนอร์ทั้งหมด</button>
+        <span id="banner-manager-status" class="muted" role="status"></span>
+      </div>
+      <div class="banner-manager-grid" style="margin-top:22px">
+        <div class="banner-field">
+          <h3 style="margin-bottom:12px">รายละเอียดสไลด์ที่เลือก</h3>
+          <label for="slide-title">หัวข้อ</label><input id="slide-title" maxlength="90" placeholder="เปิดภาพ ค้นความหมาย เข้าใจสังคม">
+          <label for="slide-subtitle">คำโปรย</label><textarea id="slide-subtitle" maxlength="220" placeholder="ข้อความสั้น ๆ บนแบนเนอร์"></textarea>
+          <label for="slide-type">ประเภทแบนเนอร์</label><select id="slide-type"><option value="image">ภาพนิ่ง</option><option value="video">วิดีโอ</option></select>
+          <label for="slide-source">ลิงก์ภาพ/วิดีโอ หรือพาธในเว็บไซต์</label><input id="slide-source" maxlength="1500" placeholder="https://example.com/banner.jpg หรือ assets/images/...">
+          <p class="banner-hint">ลิงก์ต้องเป็น URL HTTPS ที่เปิดไฟล์ภาพ/วิดีโอได้โดยตรง หรือพาธไฟล์ในเว็บไซต์</p>
+          <label for="slide-file">นำเข้าภาพจากเครื่อง (JPG, PNG, WebP)</label><input id="slide-file" type="file" accept="image/png,image/jpeg,image/webp">
+          <label for="slide-ratio">อัตราส่วนภาพ</label><select id="slide-ratio"><option value="16:5">กว้าง 16:5 (Hero)</option><option value="16:9">16:9 (วิดีโอ/แบนเนอร์)</option><option value="21:9">21:9 (Cinema)</option><option value="4:3">4:3</option><option value="1:1">1:1 (จัตุรัส)</option><option value="original">ตามภาพต้นฉบับ</option></select>
+          <label for="slide-fit">การจัดวางภาพ</label><select id="slide-fit"><option value="cover">Cover — เต็มพื้นที่</option><option value="contain">Contain — เห็นภาพครบ</option></select>
+          <label for="slide-duration">เวลาแสดงก่อนเปลี่ยน (วินาที)</label><input id="slide-duration" type="number" min="3" max="60" step="1" value="6">
+          <div class="banner-tools"><button id="btn-slide-preview" class="btn-quiet">ดูตัวอย่าง</button><button id="btn-slide-update" class="btn-primary">บันทึกการแก้ไขสไลด์</button><button id="btn-slide-delete" class="btn-danger">ลบสไลด์นี้</button></div>
+        </div>
+        <div>
+          <h3>ตัวอย่างอัตราส่วนภาพ</h3>
+          <p style="margin:6px 0 10px">เมื่อเลือกไฟล์ภาพ ระบบจะแสดงหน้าต่างครอปก่อนนำไปใช้ โดยปรับอัตราส่วนและตำแหน่งครอปได้ จากนั้นจึงบันทึกภาพที่ย่อขนาดแล้ว</p>
+          <div class="banner-preview" id="banner-editor-preview" style="height:auto;aspect-ratio:16/5;background-image:url('assets/images/social-science-jigsaw-banner.png');background-size:cover"></div>
+          <div class="panel-soft"><strong>หมายเหตุวิดีโอ</strong><p>วิดีโอใช้ลิงก์ HTTPS โดยตรงหรือไฟล์ที่เผยแพร่ไว้ในเว็บไซต์ การนำเข้าวิดีโอจากเครื่องโดยตรงยังต้องอัปโหลดไปยัง Hosting/Storage ก่อนจึงจะใช้ได้กับผู้เล่นทุกคน</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="crop-modal" id="crop-modal" role="dialog" aria-modal="true" aria-labelledby="crop-modal-title">
+    <div class="crop-dialog">
+      <h2 id="crop-modal-title">ปรับอัตราส่วนและครอปภาพ</h2>
+      <p style="margin:6px 0 12px">เลือกอัตราส่วนและเลื่อนตำแหน่งภาพในพื้นที่ตัวอย่าง ก่อนกดยืนยัน</p>
+      <div class="crop-controls"><label for="crop-ratio">อัตราส่วน</label><select id="crop-ratio"><option value="16:5">16:5 Hero</option><option value="16:9">16:9</option><option value="21:9">21:9 Cinema</option><option value="4:3">4:3</option><option value="1:1">1:1</option><option value="original">ตามต้นฉบับ</option></select><label for="crop-position">ตำแหน่งแนวตั้ง</label><input id="crop-position" type="range" min="0" max="100" value="50"></div>
+      <div class="crop-workspace"><canvas id="crop-canvas" width="1200" height="375"></canvas></div>
+      <div class="banner-tools"><button id="btn-crop-cancel" class="btn-quiet">ยกเลิก</button><button id="btn-crop-apply" class="btn-primary">ใช้ภาพนี้</button></div>
+    </div>
+  </div>
 
   <!-- ================= โปรไฟล์ผู้ใช้ ================= -->
   <section id="view-profile" class="view-section">
@@ -328,67 +410,169 @@
       const target = document.getElementById(viewId); if (target) target.classList.add('active');
     }
 
-    // Sidebar, profile, lobby banner and personal play history
-    const DEFAULT_BANNER = { title: 'เปิดภาพ ค้นความหมาย เข้าใจสังคม', subtitle: 'เกมทายภาพจิ๊กซอว์ที่เปลี่ยนแนวคิดทางสังคมศาสตร์ให้เป็นการแข่งขันที่สนุก เรียนรู้ไปพร้อมกับเพื่อน ๆ', image: 'assets/images/q3.png' };
-    let bannerSettings = { ...DEFAULT_BANNER };
+    // Sidebar, profile, slideshow banners and play history
+    const DEFAULT_BANNER = { title: 'เปิดภาพ ค้นความหมาย เข้าใจสังคม', subtitle: 'ต่อจิ๊กซอว์แห่งความคิด แล้วค้นพบเรื่องราวของสังคมไปด้วยกัน', image: 'assets/images/social-science-jigsaw-banner.png', type: 'image', duration: 6, fit: 'cover', ratio: '16:5' };
+    let bannerSettings = { title: DEFAULT_BANNER.title, subtitle: DEFAULT_BANNER.subtitle, banners: [{ ...DEFAULT_BANNER, src: DEFAULT_BANNER.image }] };
+    let selectedBannerIndex = 0, slideshowTimer = null, cropImage = null, cropFileName = '';
+    const $ = id => document.getElementById(id);
     function navigate(viewId) {
       if ((viewId === 'view-profile' || viewId === 'view-history') && !currentUser) { switchView('view-auth'); return; }
+      if (viewId === 'view-customize' && !isHost) { alert('เมนูนี้สำหรับ Host เท่านั้น'); return; }
       switchView(viewId);
-      document.querySelectorAll('.sidebar-nav button').forEach(b => b.classList.remove('active'));
-      const map = { 'view-lobby':'nav-lobby', 'view-profile':'nav-profile', 'view-history':'nav-history' };
-      if (map[viewId]) document.getElementById(map[viewId]).classList.add('active');
-      document.getElementById('app-sidebar').classList.remove('open');
+      document.querySelectorAll('.sidebar-nav > button').forEach(b => b.classList.remove('active'));
+      const map = { 'view-lobby':'nav-lobby', 'view-profile':'nav-profile', 'view-history':'nav-history', 'view-customize':'nav-banner-manager' };
+      if (map[viewId]) $(map[viewId]).classList.add('active');
+      $('app-sidebar').classList.remove('open');
       if (viewId === 'view-profile') loadProfile();
       if (viewId === 'view-history') loadPlayHistory();
+      if (viewId === 'view-customize') renderBannerList();
     }
-    document.getElementById('btn-sidebar-toggle').addEventListener('click', () => document.getElementById('app-sidebar').classList.toggle('open'));
-    document.getElementById('nav-lobby').addEventListener('click', () => navigate(currentUser ? 'view-lobby' : 'view-auth'));
-    document.getElementById('nav-profile').addEventListener('click', () => navigate('view-profile'));
-    document.getElementById('nav-history').addEventListener('click', () => navigate('view-history'));
-    document.getElementById('btn-sidebar-auth').addEventListener('click', () => navigate('view-auth'));
-    document.getElementById('btn-sidebar-logout').addEventListener('click', async () => { await signOut(auth); navigate('view-auth'); });
-    document.getElementById('btn-banner-play').addEventListener('click', () => { document.getElementById('join-room-code').focus(); document.getElementById('join-room-code').scrollIntoView({behavior:'smooth',block:'center'}); });
-    document.getElementById('btn-profile-history').addEventListener('click', () => navigate('view-history'));
-    document.getElementById('btn-profile-login').addEventListener('click', () => navigate('view-auth'));
-    document.getElementById('btn-history-lobby').addEventListener('click', () => navigate('view-lobby'));
-
-    function applyBanner(data = DEFAULT_BANNER) {
-      bannerSettings = { ...DEFAULT_BANNER, ...(data || {}) };
-      document.getElementById('banner-title').textContent = bannerSettings.title;
-      document.getElementById('banner-subtitle').textContent = bannerSettings.subtitle;
-      const safeImage = String(bannerSettings.image || DEFAULT_BANNER.image).replace(/[\"'<>]/g, '');
-      document.getElementById('lobby-banner').style.backgroundImage = `linear-gradient(105deg,rgba(18,57,46,.95),rgba(36,92,75,.72)),url("${safeImage}")`;
-      document.getElementById('banner-title-input').value = bannerSettings.title;
-      document.getElementById('banner-subtitle-input').value = bannerSettings.subtitle;
-      document.getElementById('banner-image-input').value = bannerSettings.image;
-      updateBannerPreview();
-    }
-    function updateBannerPreview() {
-      const image = (document.getElementById('banner-image-input').value.trim() || DEFAULT_BANNER.image).replace(/[\"'<>]/g, '');
-      document.getElementById('banner-preview').style.backgroundImage = `linear-gradient(90deg,rgba(18,57,46,.18),rgba(36,92,75,.05)),url("${image}")`;
-    }
-    document.getElementById('btn-banner-preview').addEventListener('click', () => {
-      document.getElementById('banner-title').textContent = document.getElementById('banner-title-input').value.trim() || DEFAULT_BANNER.title;
-      document.getElementById('banner-subtitle').textContent = document.getElementById('banner-subtitle-input').value.trim() || DEFAULT_BANNER.subtitle;
-      updateBannerPreview();
-      const image = (document.getElementById('banner-image-input').value.trim() || DEFAULT_BANNER.image).replace(/[\"'<>]/g, '');
-      document.getElementById('lobby-banner').style.backgroundImage = `linear-gradient(105deg,rgba(18,57,46,.95),rgba(36,92,75,.72)),url("${image}")`;
+    $('btn-sidebar-toggle').addEventListener('click', () => $('app-sidebar').classList.toggle('open'));
+    $('nav-lobby').addEventListener('click', () => navigate(currentUser ? 'view-lobby' : 'view-auth'));
+    $('nav-profile').addEventListener('click', () => navigate('view-profile'));
+    $('nav-history').addEventListener('click', () => navigate('view-history'));
+    $('nav-customize-toggle').addEventListener('click', () => {
+      if (!isHost) { alert('เข้าสู่ระบบด้วยบัญชี Host ที่ได้รับอนุญาตเพื่อใช้เมนูปรับแต่ง'); return; }
+      const sub = $('nav-customize-subnav'), opened = sub.classList.toggle('open');
+      $('nav-customize-toggle').setAttribute('aria-expanded', String(opened));
     });
-    document.getElementById('banner-image-input').addEventListener('input', updateBannerPreview);
-    async function loadBanner() {
-      try { const snap = await getDoc(doc(db, 'appSettings', 'lobbyBanner')); if (snap.exists()) applyBanner(snap.data()); else applyBanner(); }
-      catch (err) { applyBanner(); console.warn('ใช้แบนเนอร์เริ่มต้น:', err.code || err.message); }
+    $('nav-banner-manager').addEventListener('click', () => navigate('view-customize'));
+    $('btn-sidebar-auth').addEventListener('click', () => navigate('view-auth'));
+    $('btn-sidebar-logout').addEventListener('click', async () => { await signOut(auth); navigate('view-auth'); });
+    $('btn-banner-play').addEventListener('click', () => { $('join-room-code').focus(); $('join-room-code').scrollIntoView({behavior:'smooth',block:'center'}); });
+    $('btn-profile-history').addEventListener('click', () => navigate('view-history'));
+    $('btn-profile-login').addEventListener('click', () => navigate('view-auth'));
+    $('btn-history-lobby').addEventListener('click', () => navigate('view-lobby'));
+
+    function getBanners() {
+      const arr = Array.isArray(bannerSettings.banners) && bannerSettings.banners.length ? bannerSettings.banners : [{ ...DEFAULT_BANNER, src: DEFAULT_BANNER.image }];
+      return arr.slice(0, 5).map(b => ({ type: b.type === 'video' ? 'video' : 'image', src: String(b.src || b.image || DEFAULT_BANNER.image), title: String(b.title || DEFAULT_BANNER.title), subtitle: String(b.subtitle || DEFAULT_BANNER.subtitle), duration: Math.max(3, Math.min(60, Number(b.duration) || 6)), fit: b.fit === 'contain' ? 'contain' : 'cover', ratio: b.ratio || '16:5' }));
     }
-    document.getElementById('btn-banner-save').addEventListener('click', async () => {
-      if (!currentUser || !isHost) return alert('เฉพาะบัญชี Host ที่ได้รับอนุญาตเท่านั้น');
-      const title = document.getElementById('banner-title-input').value.trim().slice(0,90) || DEFAULT_BANNER.title;
-      const subtitle = document.getElementById('banner-subtitle-input').value.trim().slice(0,220) || DEFAULT_BANNER.subtitle;
-      const image = document.getElementById('banner-image-input').value.trim().slice(0,500) || DEFAULT_BANNER.image;
-      if (!/^(https?:\/\/|assets\/|\/)/i.test(image)) return alert('ใส่ URL ภาพที่ขึ้นต้นด้วย https:// หรือพาธ assets/ ภายในเว็บไซต์');
-      const btn = document.getElementById('btn-banner-save'); btn.disabled = true; document.getElementById('banner-save-status').textContent = 'กำลังบันทึก…';
-      try { await setDoc(doc(db, 'appSettings', 'lobbyBanner'), { title, subtitle, image, updatedAt: serverTimestamp(), updatedBy: currentUser.uid }); applyBanner({title, subtitle, image}); document.getElementById('banner-save-status').textContent = 'บันทึกแบนเนอร์แล้ว'; }
-      catch (err) { document.getElementById('banner-save-status').textContent = friendlyError(err); }
-      finally { btn.disabled = false; }
+    function currentBanner() { return getBanners()[Math.min(selectedBannerIndex, getBanners().length - 1)] || { ...DEFAULT_BANNER, src: DEFAULT_BANNER.image }; }
+    function applyBanner(data = {}) {
+      bannerSettings = { ...bannerSettings, ...(data || {}) };
+      if (!Array.isArray(bannerSettings.banners) || !bannerSettings.banners.length) {
+        bannerSettings.banners = [{ ...DEFAULT_BANNER, src: data.image || DEFAULT_BANNER.image, title: data.title || DEFAULT_BANNER.title, subtitle: data.subtitle || DEFAULT_BANNER.subtitle }];
+      }
+      selectedBannerIndex = Math.min(selectedBannerIndex, getBanners().length - 1);
+      renderBannerSlide(selectedBannerIndex);
+      renderBannerList();
+    }
+    function setMediaElement(imgEl, videoEl, slide) {
+      if (slide.type === 'video') {
+        imgEl.style.display = 'none'; videoEl.style.display = 'block';
+        if (videoEl.src !== new URL(slide.src, location.href).href) videoEl.src = slide.src;
+        videoEl.style.objectFit = slide.fit;
+        videoEl.play().catch(() => {});
+      } else {
+        videoEl.pause(); videoEl.removeAttribute('src'); videoEl.load(); videoEl.style.display = 'none';
+        imgEl.style.display = 'block'; imgEl.src = slide.src; imgEl.style.objectFit = slide.fit;
+      }
+    }
+    function renderBannerSlide(index, restart = true) {
+      const slides = getBanners(); if (!slides.length) return;
+      selectedBannerIndex = (index + slides.length) % slides.length;
+      const slide = slides[selectedBannerIndex];
+      $('banner-title').textContent = slide.title; $('banner-subtitle').textContent = slide.subtitle;
+      setMediaElement($('lobby-banner-image'), $('lobby-banner-video'), slide);
+      $('banner-stage-title').textContent = slide.title; $('banner-stage-subtitle').textContent = slide.subtitle;
+      setMediaElement($('banner-stage-image'), $('banner-stage-video'), slide);
+      $('banner-dots').innerHTML = slides.map((_,i)=>`<button type="button" class="${i===selectedBannerIndex?'active':''}" aria-label="แบนเนอร์ ${i+1}" data-slide="${i}"></button>`).join('');
+      $('banner-dots').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{renderBannerSlide(Number(b.dataset.slide));}));
+      $('banner-editor-preview').style.aspectRatio = slide.ratio === 'original' ? '16/5' : slide.ratio.replace(':','/');
+      $('banner-editor-preview').style.backgroundImage = slide.type === 'image' ? `url("${slide.src.replace(/["'<>]/g,'')}")` : 'linear-gradient(135deg,#143c32,#d8a943)';
+      $('banner-editor-preview').style.backgroundSize = slide.fit;
+      if (restart) {
+        clearTimeout(slideshowTimer);
+        if (slides.length > 1) slideshowTimer = setTimeout(() => renderBannerSlide((selectedBannerIndex+1)%slides.length), slide.duration*1000);
+      }
+    }
+    function renderBannerList() {
+      const list = $('banner-list'); if (!list) return;
+      const slides = getBanners();
+      list.innerHTML = slides.map((b,i)=>`<div class="banner-list-item"><img src="${b.type==='image'?b.src.replace(/["'<>]/g,''):'assets/images/social-science-jigsaw-banner.png'}" alt="" onerror="this.src='assets/images/social-science-jigsaw-banner.png'"><div class="item-info"><strong>${escapeHtml(b.title)}</strong><small>${b.type==='video'?'วิดีโอ':'ภาพนิ่ง'} · ${b.duration} วินาที · ${escapeHtml(b.ratio)}</small></div><button class="btn-quiet" data-edit-slide="${i}">แก้ไข</button><button class="btn-danger" data-remove-slide="${i}" aria-label="ลบสไลด์ ${i+1}">ลบ</button></div>`).join('');
+      list.querySelectorAll('[data-edit-slide]').forEach(b=>b.addEventListener('click',()=>selectBanner(Number(b.dataset.editSlide))));
+      list.querySelectorAll('[data-remove-slide]').forEach(b=>b.addEventListener('click',()=>deleteBanner(Number(b.dataset.removeSlide))));
+      $('btn-banner-add-image').disabled = slides.length >= 5; $('btn-banner-add-video').disabled = slides.length >= 5;
+    }
+    function selectBanner(index) {
+      selectedBannerIndex = index; const b = getBanners()[index]; if (!b) return;
+      $('slide-title').value=b.title; $('slide-subtitle').value=b.subtitle; $('slide-type').value=b.type; $('slide-source').value=b.src;
+      $('slide-ratio').value=b.ratio; $('slide-fit').value=b.fit; $('slide-duration').value=b.duration;
+      renderBannerSlide(index);
+    }
+    function deleteBanner(index) {
+      const slides=getBanners(); if(slides.length<=1){alert('ต้องมีแบนเนอร์อย่างน้อย 1 รายการ');return;}
+      if(!confirm('ต้องการลบแบนเนอร์นี้หรือไม่?')) return;
+      slides.splice(index,1); bannerSettings.banners=slides; selectedBannerIndex=Math.max(0,Math.min(index,slides.length-1)); applyBanner(bannerSettings); selectBanner(selectedBannerIndex);
+    }
+    function updateSelectedBanner() {
+      if(!currentUser || !isHost) { alert('เฉพาะ Host เท่านั้น'); return; }
+      const slides=getBanners(), index=Math.min(selectedBannerIndex,slides.length-1);
+      const src=$('slide-source').value.trim();
+      if(!src) { alert('กรุณาระบุ URL หรือพาธของภาพ/วิดีโอ'); return; }
+      if(!/^(https:\/\/|data:image\/(jpeg|png|webp);base64,|assets\/|\/)/i.test(src)) { alert('ใช้ URL HTTPS, ภาพที่นำเข้า หรือพาธ assets/ ภายในเว็บไซต์'); return; }
+      const type=$('slide-type').value;
+      if(type==='video' && !/^(https:\/\/|assets\/|\/)/i.test(src)) { alert('วิดีโอต้องเป็น URL HTTPS หรือพาธไฟล์ในเว็บไซต์'); return; }
+      slides[index]={type,src,title:$('slide-title').value.trim().slice(0,90)||DEFAULT_BANNER.title,subtitle:$('slide-subtitle').value.trim().slice(0,220)||DEFAULT_BANNER.subtitle,duration:Math.max(3,Math.min(60,Number($('slide-duration').value)||6)),fit:$('slide-fit').value,ratio:$('slide-ratio').value};
+      bannerSettings.banners=slides; applyBanner(bannerSettings); selectBanner(index);
+      $('banner-manager-status').textContent='แก้ไขในตัวอย่างแล้ว อย่าลืมกดบันทึกแบนเนอร์ทั้งหมด';
+    }
+    $('btn-slide-update').addEventListener('click',updateSelectedBanner);
+    $('btn-slide-preview').addEventListener('click',updateSelectedBanner);
+    $('btn-slide-delete').addEventListener('click',()=>deleteBanner(selectedBannerIndex));
+    $('btn-banner-add-image').addEventListener('click',()=>{if(getBanners().length>=5)return alert('รองรับไม่เกิน 5 สไลด์เพื่อจำกัดขนาดข้อมูล');bannerSettings.banners=getBanners().concat([{...DEFAULT_BANNER,src:DEFAULT_BANNER.image,title:'แบนเนอร์ใหม่'}]);applyBanner(bannerSettings);selectBanner(bannerSettings.banners.length-1);});
+    $('btn-banner-add-video').addEventListener('click',()=>{if(getBanners().length>=5)return alert('รองรับไม่เกิน 5 สไลด์');bannerSettings.banners=getBanners().concat([{type:'video',src:'https://example.com/video.mp4',title:'วิดีโอแนะนำเกม',subtitle:'เพิ่ม URL วิดีโอ HTTPS ที่เปิดไฟล์ได้โดยตรง',duration:8,fit:'cover',ratio:'16:9'}]);applyBanner(bannerSettings);selectBanner(bannerSettings.banners.length-1);});
+    $('slide-type').addEventListener('change',()=>{if($('slide-type').value==='video')$('slide-ratio').value='16:9';});
+    $('slide-ratio').addEventListener('change',()=>{ $('banner-editor-preview').style.aspectRatio=$('slide-ratio').value==='original'?'16/5':$('slide-ratio').value.replace(':','/'); });
+    $('slide-source').addEventListener('input',()=>{ const src=$('slide-source').value.trim(); if(/^https:\/\//i.test(src)||/^assets\//i.test(src)||src.startsWith('/')) $('banner-editor-preview').style.backgroundImage=`url("${src.replace(/["'<>]/g,'')}")`; });
+    async function fileToDataUrl(file) {
+      if (!file || !/^image\/(jpeg|png|webp)$/.test(file.type)) throw new Error('รองรับไฟล์ JPG, PNG และ WebP เท่านั้น');
+      if (file.size > 20*1024*1024) throw new Error('ไฟล์ใหญ่เกิน 20 MB');
+      const data=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file);});
+      const img=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error('เปิดภาพไม่สำเร็จ'));im.src=data;});
+      cropImage=img; cropFileName=file.name; drawCropCanvas();
+      $('crop-ratio').value=$('slide-ratio').value; $('crop-modal').classList.add('open');
+    }
+    function drawCropCanvas() {
+      if(!cropImage)return;
+      const ratio=$('crop-ratio').value, natural=cropImage.naturalWidth/cropImage.naturalHeight;
+      const ar=ratio==='original'?natural:ratio.split(':').map(Number).reduce((a,b)=>a/b);
+      const width=1200,height=Math.max(1,Math.round(width/ar)), ctx=$('crop-canvas').getContext('2d');
+      $('crop-canvas').width=width; $('crop-canvas').height=height;
+      const scale=Math.max(width/cropImage.naturalWidth,height/cropImage.naturalHeight);
+      const sw=width/scale, sh=height/scale;
+      const sx=(cropImage.naturalWidth-sw)/2, sy=(cropImage.naturalHeight-sh)*Number($('crop-position').value)/100;
+      ctx.clearRect(0,0,width,height);ctx.drawImage(cropImage,sx,sy,sw,sh,0,0,width,height);
+    }
+    $('slide-file').addEventListener('change',async e=>{try{await fileToDataUrl(e.target.files?.[0]);}catch(err){alert(err.message);e.target.value='';}});
+    $('crop-ratio').addEventListener('change',drawCropCanvas);$('crop-position').addEventListener('input',drawCropCanvas);
+    $('btn-crop-cancel').addEventListener('click',()=>{$('crop-modal').classList.remove('open');$('slide-file').value='';cropImage=null;});
+    $('btn-crop-apply').addEventListener('click',()=>{
+      if(!cropImage)return;
+      const canvas=$('crop-canvas'), data=canvas.toDataURL('image/jpeg',.76);
+      if(data.length>180000){alert('ภาพยังมีขนาดใหญ่เกินไป กรุณาใช้ภาพที่มีรายละเอียดน้อยลงหรือปรับขนาดก่อน');return;}
+      $('slide-source').value=data;$('slide-type').value='image';$('slide-ratio').value=$('crop-ratio').value;
+      $('banner-editor-preview').style.backgroundImage=`url("${data}")`;$('banner-editor-preview').style.backgroundSize='cover';
+      $('crop-modal').classList.remove('open');$('slide-file').value='';cropImage=null;
+      $('banner-manager-status').textContent='เตรียมภาพที่ครอปแล้วเรียบร้อย กด “บันทึกการแก้ไขสไลด์” และ “บันทึกแบนเนอร์ทั้งหมด”';
+    });
+    async function loadBanner() {
+      try { const snap=await getDoc(doc(db,'appSettings','lobbyBanner')); if(snap.exists())applyBanner(snap.data());else applyBanner(); }
+      catch(err){applyBanner();console.warn('ใช้แบนเนอร์เริ่มต้น:',err.code||err.message);}
+      selectBanner(0);
+    }
+    $('btn-banner-save-all').addEventListener('click',async()=>{
+      if(!currentUser||!isHost)return alert('เฉพาะบัญชี Host ที่ได้รับอนุญาตเท่านั้น');
+      const slides=getBanners();
+      if(slides.length>5)return alert('รองรับไม่เกิน 5 แบนเนอร์');
+      const payload={title:slides[0].title,subtitle:slides[0].subtitle,image:slides[0].src,banners:slides,updatedAt:serverTimestamp(),updatedBy:currentUser.uid};
+      const bytes=new Blob([JSON.stringify(payload, (k,v)=>k==='updatedAt'?null:v)]).size;
+      if(bytes>850000)return alert('ข้อมูลแบนเนอร์มีขนาดใหญ่เกินไปสำหรับ Firestore กรุณาลดจำนวนภาพ/ขนาดภาพ หรือใช้ URL HTTPS แทน');
+      $('btn-banner-save-all').disabled=true;$('banner-manager-status').textContent='กำลังบันทึกแบนเนอร์…';
+      try{await setDoc(doc(db,'appSettings','lobbyBanner'),payload);applyBanner(payload);$('banner-manager-status').textContent='บันทึกแบนเนอร์ทั้งหมดแล้ว';}
+      catch(err){$('banner-manager-status').textContent=friendlyError(err);console.error(err);}
+      finally{$('btn-banner-save-all').disabled=false;}
     });
     async function loadProfile() {
       if (!currentUser) return;
@@ -418,7 +602,8 @@
         isHost = (user.email === "host123@gmail.com"); // Prototype only: replace with verified custom claims before production.
         document.getElementById('user-badge').textContent = `${user.email || 'ผู้เล่นทั่วไป'} (${isHost ? 'Host' : 'Player'})`;
         document.getElementById('host-panel-lobby').style.display = isHost ? 'block' : 'none';
-        document.getElementById('host-banner-editor').style.display = isHost ? 'block' : 'none';
+        document.getElementById('nav-customize-toggle').style.display = isHost ? 'flex' : 'none';
+        document.getElementById('nav-customize-subnav').classList.remove('open');
         document.getElementById('btn-sidebar-auth').style.display = 'none';
         document.getElementById('btn-sidebar-logout').style.display = 'inline-flex';
         sidebarUser.innerHTML = `<strong>${escapeHtml(user.displayName || user.email || 'สมาชิก')}</strong>${isHost ? 'Host · ผู้ดูแลเกม' : 'สมาชิก'}`;
@@ -427,7 +612,8 @@
       } else {
         isHost = false;
         document.getElementById('host-panel-lobby').style.display = 'none';
-        document.getElementById('host-banner-editor').style.display = 'none';
+        document.getElementById('nav-customize-toggle').style.display = 'none';
+        document.getElementById('nav-customize-subnav').classList.remove('open');
         document.getElementById('btn-sidebar-auth').style.display = 'inline-flex';
         document.getElementById('btn-sidebar-logout').style.display = 'none';
         sidebarUser.innerHTML = '<strong>ยังไม่ได้เข้าสู่ระบบ</strong>เข้าสู่ระบบเพื่อบันทึกประวัติ';

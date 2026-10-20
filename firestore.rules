@@ -10,11 +10,14 @@ service cloud.firestore {
     match /appSettings/{settingId} {
       allow read: if signedIn();
       allow create, update: if settingId == 'lobbyBanner' && isConfiguredHost()
-        && request.resource.data.keys().hasOnly(['title', 'subtitle', 'image', 'updatedAt', 'updatedBy'])
+        && request.resource.data.keys().hasOnly(['title', 'subtitle', 'image', 'banners', 'updatedAt', 'updatedBy'])
         && request.resource.data.title is string && request.resource.data.title.size() <= 90
         && request.resource.data.subtitle is string && request.resource.data.subtitle.size() <= 220
-        && request.resource.data.image is string && request.resource.data.image.size() <= 500
-        && request.resource.data.updatedBy == request.auth.uid;
+        && request.resource.data.image is string && request.resource.data.image.size() <= 200000
+        && request.resource.data.banners is list && request.resource.data.banners.size() >= 1
+        && request.resource.data.banners.size() <= 5
+        && request.resource.data.updatedBy == request.auth.uid
+        && request.resource.data.updatedAt is timestamp;
       allow delete: if false;
     }
 
