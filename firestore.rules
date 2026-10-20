@@ -41,11 +41,14 @@ service cloud.firestore {
       allow update: if isRoomHost(roomId)
         && request.resource.data.hostUid == resource.data.hostUid
         && request.resource.data.roomCode == resource.data.roomCode
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'currentRound', 'updatedAt']);
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status', 'currentRound', 'updatedAt', 'questionDurationSeconds',
+          'startedAt', 'pausedAt', 'resumedAt'
+        ]);
       allow delete: if isRoomHost(roomId);
 
       match /players/{uid} {
-        allow read: if signedIn() && (isRoomHost(roomId) || request.auth.uid == uid || roomData(roomId).status in ['FINISHED', 'CLOSED', 'PLAYING', 'WAITING']);
+        allow read: if signedIn() && (isRoomHost(roomId) || request.auth.uid == uid || roomData(roomId).status in ['FINISHED', 'CLOSED', 'CANCELLED', 'PLAYING', 'PAUSED', 'WAITING']);
         allow create: if signedIn() && request.auth.uid == uid && roomExists(roomId)
           && roomData(roomId).status == 'WAITING'
           && request.resource.data.uid == uid
@@ -54,15 +57,18 @@ service cloud.firestore {
           && request.resource.data.name.size() <= 24
           && request.resource.data.score == 0
           && request.resource.data.correctCount == 0;
-        // Prototype: score updates still occur client-side; move scoring to trusted Cloud Functions for production.
-        allow update: if signedIn() && request.auth.uid == uid
+        // Prototype limitation: player score fields are still client-writable. For real competitions,
+        // move answer validation and score updates into trusted Cloud Functions.
+        allow update: if signedIn()
           && request.resource.data.uid == resource.data.uid
           && request.resource.data.name == resource.data.name
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['score', 'correctCount'])
-          && request.resource.data.score is number
-          && request.resource.data.score >= resource.data.score
-          && request.resource.data.correctCount is number
-          && request.resource.data.correctCount >= resource.data.correctCount;
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'score', 'correctCount', 'currentRound', 'lastRoundScore', 'completed',
+            'roundStartedAt', 'lastAnswerAt'
+          ])
+          && request.resource.data.score is number && request.resource.data.score >= 0
+          && request.resource.data.correctCount is number && request.resource.data.correctCount >= 0
+          && (request.auth.uid == uid || isRoomHost(roomId));
         allow delete: if isRoomHost(roomId) || (signedIn() && request.auth.uid == uid);
       }
     }

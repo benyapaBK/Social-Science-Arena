@@ -58,6 +58,9 @@
     @media(min-width:851px){.sidebar-toggle{display:none}}
     @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}@media(max-width:700px){.view-section{padding:14px}.card{border-radius:18px;padding:20px}.puzzle-board{gap:5px;aspect-ratio:1.35/1;grid-template-rows:repeat(2,minmax(76px,1fr))}.tile-front,.tile-back{border-radius:8px}.answer-row{flex-direction:column}.answer-row button{width:100%}.podium-container{height:250px}.podium-1{height:200px}.podium-2{height:150px}.podium-3{height:115px}.section-heading{align-items:flex-start}.score-card{min-width:unset}.game-topline{align-items:stretch}}@media(max-width:420px){.puzzle-board{grid-template-columns:repeat(5,minmax(0,1fr));aspect-ratio:1.05/1;grid-template-rows:repeat(2,minmax(65px,1fr))}.tile-front{font-size:1.1rem}.podium-name{font-size:.75rem}.podium-step{min-width:76px}.podium-container{gap:6px}}
     @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+    .host-settings{margin:18px 0}.host-progress-table{width:100%;border-collapse:collapse;min-width:650px}.host-progress-table th,.host-progress-table td{padding:12px 10px;border-bottom:1px solid var(--line);text-align:left}.host-progress-table th{background:var(--surface-2);font-size:.86rem}.host-player-name{font-weight:700;white-space:nowrap}.host-player-avatar{font-size:1.35rem;margin-right:7px}.mini-progress{height:8px;min-width:100px;background:#e1e8df;border-radius:99px;overflow:hidden;margin-top:5px}.mini-progress span{display:block;height:100%;background:linear-gradient(90deg,#34745e,#d8a943);transition:width .3s}.round-timer-panel{margin:18px 0 8px;padding:14px 16px;border-radius:16px;background:#f2f4ed;border:1px solid var(--line)}.timer-meta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:9px}.progress-track{height:12px;background:#dce5da;border-radius:99px;overflow:hidden}.progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#2f8065,#d8a943);transition:width .35s linear}.progress-fill.warning{background:linear-gradient(90deg,#d8a943,#d96f5e)}#player-avatar{font-size:1.25rem;max-width:220px}.puzzle-tile{isolation:isolate;overflow:visible}.puzzle-tile:before,.puzzle-tile:after{content:'';position:absolute;z-index:4;pointer-events:none;background:inherit}.puzzle-tile:before{width:24%;height:24%;border-radius:50%;top:-10%;left:38%;background:linear-gradient(145deg,#3c826b,#1f5142);box-shadow:0 2px 5px #102e2633}.puzzle-tile:after{width:22%;height:22%;border-radius:50%;right:-9%;top:39%;background:linear-gradient(145deg,#3c826b,#1f5142);box-shadow:0 2px 5px #102e2633}.puzzle-tile:nth-child(5n):after{display:none}.puzzle-tile:nth-child(-n+5):before{top:auto;bottom:-10%}.puzzle-tile:nth-child(n+6):before{top:-10%;bottom:auto}.puzzle-tile.flipped:before,.puzzle-tile.flipped:after{opacity:.08}.tile-front,.tile-back{border-radius:9px;overflow:hidden}.puzzle-tile.flipped{animation:piecePop .38s ease-out}.tile-front{background:linear-gradient(145deg,#2c6a56,#173f35);border:2px solid #e8d39a}.tile-front:before{content:'';position:absolute;inset:5px;border:1px dashed #ffffff48;border-radius:7px;pointer-events:none}.tile-front:after{content:'🧩';font-size:clamp(1.3rem,3vw,2.5rem);opacity:.16;transform:none}@keyframes piecePop{0%{transform:scale(.96)}55%{transform:scale(1.045)}100%{transform:scale(1)}}.puzzle-tile:hover:not(.flipped){z-index:5}.puzzle-tile.flipped .tile-back{box-shadow:0 0 0 2px #e5c06c,0 8px 18px #102e2644}
+
   </style>
 </head>
 <body>
@@ -127,6 +130,10 @@
         <p style="margin-bottom:16px;">กรอกรหัสห้องจากผู้จัดเกม แล้วใช้ชื่อเล่นที่เพื่อนจำได้</p>
         <input type="text" id="join-room-code" placeholder="ใส่รหัสห้อง 6 หลัก">
         <input type="text" id="player-nickname" placeholder="ตั้งชื่อเล่นของคุณ">
+        <label for="player-avatar">เลือกอิโมจิประจำตัว</label>
+        <select id="player-avatar" aria-label="เลือกอิโมจิประจำตัว">
+          <option>🌿</option><option>🦊</option><option>🐼</option><option>🐸</option><option>🐯</option><option>🦋</option><option>🐳</option><option>🐙</option><option>🦉</option><option>🐝</option><option>🐢</option><option>🦄</option><option>🌈</option><option>⭐</option><option>🌻</option><option>🍀</option><option>🔥</option><option>🎨</option><option>📚</option><option>🧩</option><option>💡</option><option>🎯</option><option>🚀</option><option>💎</option><option>☀️</option><option>🌙</option><option>🎵</option><option>🦖</option><option>🐱</option><option>🐰</option>
+        </select>
         <button id="btn-join-room" class="btn-success btn-full">เข้าห้องแข่งขัน</button>
       </div>
     </div>
@@ -212,15 +219,30 @@
         <button id="btn-host-close" class="btn-danger" style="padding: 6px 12px;">ปิดห้อง</button>
       </div>
 
-      <div class="inline-actions">
-        <button id="btn-host-start" class="btn-success">เริ่มการแข่งขัน (ข้อ 1)</button>
-        <button id="btn-host-next" class="btn-primary" style="display: none;">ไปยังข้อถัดไป</button>
-        <button id="btn-host-finish" class="btn-danger" style="display: none;">จบเกมและดูผลลัพธ์</button>
+      <div class="host-settings panel-soft">
+        <h3>ตั้งค่าเวลาและควบคุมการแข่งขัน</h3>
+        <label for="host-round-seconds">เวลาต่อข้อ</label>
+        <div class="inline-actions" style="align-items:center">
+          <input id="host-round-seconds" type="number" min="10" max="600" step="5" value="60" style="max-width:160px">
+          <span class="muted">วินาที (10 วินาที – 10 นาที)</span>
+        </div>
+        <div class="inline-actions">
+          <button id="btn-host-start" class="btn-success">เริ่มการแข่งขัน</button>
+          <button id="btn-host-pause" class="btn-primary" style="display:none">หยุดชั่วคราว</button>
+          <button id="btn-host-resume" class="btn-success" style="display:none">เล่นต่อ</button>
+          <button id="btn-host-cancel" class="btn-danger" style="display:none">ยกเลิกเกม</button>
+          <button id="btn-host-restart" class="btn-quiet" style="display:none">เริ่มเกมใหม่</button>
+          <button id="btn-host-finish" class="btn-danger" style="display:none">จบเกมและดูผลลัพธ์</button>
+        </div>
+        <p id="host-status-note" class="muted">เมื่อเริ่มเกม Host จะอยู่ในแดชบอร์ดนี้ตลอดการแข่งขัน</p>
       </div>
-
       <div>
-        <h3>ผู้เข้าร่วมแข่งขัน (<span id="player-count">0</span> คน)</h3>
-        <ul id="player-list" class="player-list"></ul>
+        <h3>ความคืบหน้าผู้เล่น (<span id="player-count">0</span> คน)</h3>
+        <div class="table-wrap"><table class="host-progress-table">
+          <thead><tr><th>ผู้เล่น</th><th>ความคืบหน้า</th><th>คะแนนข้อล่าสุด</th><th>คะแนนรวม</th><th>สถานะ</th></tr></thead>
+          <tbody id="host-player-progress"><tr><td colspan="5">รอผู้เล่นเข้าห้อง…</td></tr></tbody>
+        </table></div>
+        <ul id="player-list" class="player-list" style="display:none"></ul>
       </div>
     </div>
   </section>
@@ -239,7 +261,11 @@
         </div>
       </div>
 
-      <!-- บอร์ดจิ๊กซอว์ 3D 10 ช่อง -->
+      <div class="round-timer-panel">
+        <div class="timer-meta"><strong>เวลาที่เหลือ <span id="round-time-left">01:00</span></strong><span id="round-progress-label">ข้อ 1 จาก 10</span></div>
+        <div class="progress-track" role="progressbar" aria-label="เวลาที่เหลือในข้อนี้" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><div id="round-progress-fill" class="progress-fill" style="width:100%"></div></div>
+      </div>
+      <!-- บอร์ดจิ๊กซอว์ 10 ชิ้นรูปทรงจิ๊กซอว์ -->
       <div class="puzzle-board" id="puzzle-board"></div>
 
       <!-- ฟอร์มตอบคำถาม -->
@@ -291,7 +317,10 @@
         <tbody id="leaderboard-body"></tbody>
       </table></div>
 
-      <button id="btn-back-lobby" class="btn-primary" style="margin-top: 24px;">กลับหน้าแรก</button>
+      <div class="inline-actions" style="margin-top:24px">
+        <button id="btn-result-restart" class="btn-success" style="display:none">เริ่มเกมใหม่ในห้องเดิม</button>
+        <button id="btn-back-lobby" class="btn-primary">กลับหน้าแรก</button>
+      </div>
     </div>
   </section>
 
@@ -391,6 +420,13 @@
     let activeRoundNumber = null;
     let playersUnsubscribe = null;
     let resultShownFor = null;
+    let currentRoomStatus = 'WAITING';
+    let timerInterval = null;
+    let timerRemainingMs = 60000;
+    let roundDurationMs = 60000;
+    let timerLastTick = 0;
+    let playerEmoji = '🌿';
+    let advancingRound = false;
 
     function showError(id, message) { const el = document.getElementById(id); if (el) el.textContent = message; }
     function friendlyError(err) {
@@ -697,7 +733,6 @@
         await setDoc(roomRef, { roomCode, hostUid: currentUser.uid, hostEmail: currentUser.email, status: 'WAITING', currentRound: 1, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
         document.getElementById('host-room-code-display').textContent = roomCode;
         document.getElementById('btn-host-start').style.display = 'inline-flex';
-        document.getElementById('btn-host-next').style.display = 'none';
         document.getElementById('btn-host-finish').style.display = 'none';
         switchView('view-host'); listenToRoom(roomCode);
       } catch(err) { showError('auth-error', friendlyError(err)); }
@@ -719,178 +754,246 @@
         await setDoc(doc(db, 'rooms', roomCode, 'players', currentUser.uid), { uid: currentUser.uid, name: nickname.slice(0, 24), score: 0, correctCount: 0, joinedAt: serverTimestamp() }, { merge: true });
         document.getElementById('host-room-code-display').textContent = roomCode;
         switchView('view-host');
-        document.querySelector('#view-host h2').textContent = `ห้องรอเริ่มเกม ${roomCode}`;
-        document.getElementById('btn-host-start').style.display = 'none'; document.getElementById('btn-host-next').style.display = 'none'; document.getElementById('btn-host-finish').style.display = 'none'; document.getElementById('btn-host-close').style.display = 'none';
+        document.querySelector('#view-host h2').firstChild.textContent = 'ห้องรอเริ่มเกม '; document.getElementById('host-room-code-display').textContent = roomCode;
+        document.getElementById('btn-host-start').style.display = 'none'; document.getElementById('btn-host-finish').style.display = 'none'; document.getElementById('btn-host-close').style.display = 'none';
         listenToRoom(roomCode);
       } catch(err) { alert(friendlyError(err)); }
     });
 
-    // 7. Realtime Room Listener
+    // 7. Realtime Room Listener: Host stays on dashboard; players progress independently.
     function listenToRoom(roomId) {
       if (roomUnsubscribe) roomUnsubscribe();
-
       roomUnsubscribe = onSnapshot(doc(db, "rooms", roomId), snap => {
         if (!snap.exists()) return;
         const room = snap.data();
-
-        // Host จัดการหน้าจอ
-        if (isHost && room.status === "WAITING") {
-          switchView('view-host');
-        }
-
-        // เริ่มเกม หรือเปลี่ยนรอบ
-        if (room.status === "WAITING" && !isHost) switchView('view-host');
-        if (room.status === "PLAYING") {
-          switchView('view-game');
-          if (activeRoundNumber !== room.currentRound) setupRound(room.currentRound);
-          updateMyScore(roomId);
-        }
-        if (room.status === "FINISHED" || room.status === "CLOSED") {
-          switchView('view-result');
-          if (resultShownFor !== roomId) { resultShownFor = roomId; showResults(roomId); }
+        currentRoomStatus = room.status || 'WAITING';
+        if (isHost) {
+          if (room.status === 'FINISHED') {
+            switchView('view-result');
+            if (resultShownFor !== roomId) { resultShownFor = roomId; showResults(roomId); }
+          } else switchView('view-host');
+          document.getElementById('host-room-code-display').textContent = roomId;
+          document.getElementById('btn-host-start').style.display = room.status === 'WAITING' ? 'inline-flex' : 'none';
+          document.getElementById('btn-host-pause').style.display = room.status === 'PLAYING' ? 'inline-flex' : 'none';
+          document.getElementById('btn-host-resume').style.display = room.status === 'PAUSED' ? 'inline-flex' : 'none';
+          document.getElementById('btn-host-cancel').style.display = ['PLAYING','PAUSED'].includes(room.status) ? 'inline-flex' : 'none';
+          document.getElementById('btn-host-restart').style.display = ['FINISHED','CANCELLED'].includes(room.status) ? 'inline-flex' : 'none';
+          document.getElementById('host-status-note').textContent = room.status === 'PLAYING' ? 'กำลังแข่งขัน · ผู้เล่นแต่ละคนเล่นตามจังหวะของตนเอง' : room.status === 'PAUSED' ? 'หยุดเกมชั่วคราว ผู้เล่นทุกคนจะพักเวลาไว้' : room.status === 'FINISHED' ? 'การแข่งขันจบแล้ว' : 'เมื่อเริ่มเกม Host จะอยู่ในแดชบอร์ดนี้ตลอดการแข่งขัน';
+        } else {
+          if (room.status === 'WAITING') switchView('view-host');
+          if (room.status === 'PLAYING') {
+            // Per-player progress is driven by the players collection snapshot.
+            const pRef = doc(db, 'rooms', roomId, 'players', currentUser.uid);
+            getDoc(pRef).then(ps => {
+              if (!ps.exists()) return;
+              const p = ps.data();
+              if (p.completed) {
+                document.getElementById('game-feedback').textContent = 'คุณทำครบทุกข้อแล้ว รอผู้เล่นคนอื่นจบการแข่งขันได้เลย';
+                switchView('view-game');
+                stopRoundTimer();
+              } else {
+                switchView('view-game');
+                const r = Number(p.currentRound || 1);
+                if (activeRoundNumber !== r) setupRound(r, p);
+                else if (!timerInterval && !hasAnsweredCurrentRound) startRoundTimer();
+              }
+            }).catch(err => console.warn('อ่านความคืบหน้าผู้เล่นไม่ได้', err));
+          }
+          if (room.status === 'PAUSED') {
+            switchView('view-game');
+            stopRoundTimer();
+            document.getElementById('game-feedback').textContent = '⏸ โฮสต์หยุดเกมชั่วคราว รอสัญญาณเริ่มต่อ…';
+          }
+          if (room.status === 'FINISHED') {
+            stopRoundTimer(); switchView('view-result');
+            if (resultShownFor !== roomId) { resultShownFor = roomId; showResults(roomId); }
+          }
+          if (room.status === 'CANCELLED' || room.status === 'CLOSED') {
+            stopRoundTimer(); alert('โฮสต์ยกเลิกการแข่งขันแล้ว'); switchView('view-lobby');
+          }
         }
       });
 
-      // ดึงรายชื่อผู้เล่นในห้องแบบ Realtime
       if (playersUnsubscribe) playersUnsubscribe();
-      playersUnsubscribe = onSnapshot(collection(db, "rooms", roomId, "players"), snapshot => {
+      playersUnsubscribe = onSnapshot(collection(db, "rooms", roomId, "players"), async snapshot => {
         const players = [];
-        snapshot.forEach(d => players.push(d.data()));
+        snapshot.forEach(d => players.push({uid:d.id,...d.data()}));
         document.getElementById('player-count').textContent = players.length;
-        
         const list = document.getElementById('player-list');
-        list.innerHTML = players.map(p => `
-          <li>
-            <span>${escapeHtml(p.name || 'ผู้เล่น')}</span>
-            <span style="color: var(--green); font-weight: bold;">${Number(p.score || 0).toLocaleString()} คะแนน</span>
-          </li>
-        `).join('');
+        list.innerHTML = players.map(p => `<li><span>${escapeHtml(p.avatarEmoji||'🌿')} ${escapeHtml(p.name || 'ผู้เล่น')}</span><span style="color:var(--green);font-weight:bold">${Number(p.score||0).toLocaleString()} คะแนน</span></li>`).join('');
+        const tbody = document.getElementById('host-player-progress');
+        if (tbody) tbody.innerHTML = players.length ? players.sort((a,b)=>Number(b.score||0)-Number(a.score||0)).map(p=>{
+          const r=Math.min(10,Math.max(0,Number(p.currentRound||0)));
+          const pct=p.completed?100:Math.round(r/10*100);
+          const progress=p.completed?'ครบ 10/10':r===0?'รอเริ่ม':`ข้อ ${r}/10`;
+          return `<tr><td class="host-player-name"><span class="host-player-avatar">${escapeHtml(p.avatarEmoji||'🌿')}</span>${escapeHtml(p.name||'ผู้เล่น')}</td><td>${progress}<div class="mini-progress"><span style="width:${pct}%"></span></div></td><td>${Number(p.lastRoundScore||0).toLocaleString()} คะแนน</td><td><strong>${Number(p.score||0).toLocaleString()}</strong></td><td>${p.completed?'✅ จบแล้ว':currentRoomStatus==='PAUSED'?'⏸ พัก':r===0?'รอเริ่ม':'กำลังเล่น'}</td></tr>`;
+        }).join('') : '<tr><td colspan="5">รอผู้เล่นเข้าห้อง…</td></tr>';
+        if (!isHost && currentRoomStatus === 'PLAYING') {
+          const me=players.find(p=>p.uid===currentUser?.uid);
+          if (me) {
+            if (me.completed) {
+              stopRoundTimer();
+              document.getElementById('game-feedback').textContent='คุณทำครบทุกข้อแล้ว รอผลการแข่งขันจากโฮสต์';
+            } else if (Number(me.currentRound||0)>0 && activeRoundNumber !== Number(me.currentRound)) {
+              setupRound(Number(me.currentRound), me);
+            }
+          }
+        }
+        // Host automatically finishes the room once every joined player has completed all 10 questions.
+        if (isHost && currentRoomStatus === 'PLAYING' && players.length && players.every(p=>p.completed)) {
+          try { await updateDoc(doc(db,'rooms',roomId),{status:'FINISHED',updatedAt:serverTimestamp()}); } catch(err) { console.warn('จบเกมอัตโนมัติไม่สำเร็จ',err); }
+        }
       });
     }
 
-    // 8. การทำงานฝั่ง Host
+    // 8. Host controls
+    async function resetRoomPlayers(roomId) {
+      const snap = await getDocs(collection(db,'rooms',roomId,'players'));
+      const batchPlayers=[];
+      snap.forEach(d=>batchPlayers.push({ref:d.ref,data:d.data()}));
+      for (const p of batchPlayers) await updateDoc(p.ref,{score:0,correctCount:0,currentRound:0,lastRoundScore:0,completed:false,roundStartedAt:0});
+      activeRoundNumber=null; resultShownFor=null; stopRoundTimer();
+    }
     document.getElementById('btn-host-start').addEventListener('click', async () => {
-      await updateDoc(doc(db, "rooms", currentRoomId), { status: "PLAYING", currentRound: 1, updatedAt: serverTimestamp() });
-      document.getElementById('btn-host-start').style.display = 'none';
-      document.getElementById('btn-host-next').style.display = 'inline-flex';
+      try {
+        const seconds=Math.min(600,Math.max(10,Number(document.getElementById('host-round-seconds').value)||60));
+        const snap=await getDocs(collection(db,'rooms',currentRoomId,'players'));
+        if(snap.empty) return alert('รอให้ผู้เล่นเข้าห้องก่อนเริ่มเกม');
+        for(const d of snap.docs) await updateDoc(d.ref,{score:0,correctCount:0,currentRound:1,lastRoundScore:0,completed:false,roundStartedAt:Date.now()});
+        await updateDoc(doc(db,'rooms',currentRoomId),{status:'PLAYING',currentRound:1,questionDurationSeconds:seconds,startedAt:serverTimestamp(),updatedAt:serverTimestamp()});
+      } catch(err){alert(friendlyError(err));}
     });
+    document.getElementById('btn-host-pause').addEventListener('click', async()=>{try{await updateDoc(doc(db,'rooms',currentRoomId),{status:'PAUSED',pausedAt:Date.now(),updatedAt:serverTimestamp()});}catch(e){alert(friendlyError(e));}});
+    document.getElementById('btn-host-resume').addEventListener('click', async()=>{try{await updateDoc(doc(db,'rooms',currentRoomId),{status:'PLAYING',resumedAt:Date.now(),updatedAt:serverTimestamp()});}catch(e){alert(friendlyError(e));}});
+    document.getElementById('btn-host-cancel').addEventListener('click', async()=>{if(!confirm('ยืนยันยกเลิกเกมนี้หรือไม่?'))return;try{await updateDoc(doc(db,'rooms',currentRoomId),{status:'CANCELLED',updatedAt:serverTimestamp()});}catch(e){alert(friendlyError(e));}});
+    document.getElementById('btn-host-restart').addEventListener('click', async()=>{if(!confirm('เริ่มเกมใหม่ในห้องเดิมและรีเซ็ตคะแนนทุกคนหรือไม่?'))return;try{await resetRoomPlayers(currentRoomId);await updateDoc(doc(db,'rooms',currentRoomId),{status:'WAITING',currentRound:1,updatedAt:serverTimestamp()});switchView('view-host');}catch(e){alert(friendlyError(e));}});
+    document.getElementById('btn-host-finish').addEventListener('click', async()=>{try{await updateDoc(doc(db,'rooms',currentRoomId),{status:'FINISHED',updatedAt:serverTimestamp()});}catch(e){alert(friendlyError(e));}});
+    document.getElementById('btn-host-close').addEventListener('click', async()=>{if(confirm('ต้องการปิดห้องแข่งขันหรือไม่?')){try{await updateDoc(doc(db,'rooms',currentRoomId),{status:'CLOSED',updatedAt:serverTimestamp()});switchView('view-lobby');}catch(e){alert(friendlyError(e));}}});
 
-    document.getElementById('btn-host-next').addEventListener('click', async () => {
-      const roomSnap = await getDoc(doc(db, "rooms", currentRoomId));
-      const current = roomSnap.data().currentRound;
-      if (current < 10) {
-        await updateDoc(doc(db, "rooms", currentRoomId), { currentRound: current + 1, updatedAt: serverTimestamp() });
-        if (current + 1 === 10) {
-          document.getElementById('btn-host-next').style.display = 'none';
-          document.getElementById('btn-host-finish').style.display = 'inline-flex';
-        }
-      }
-    });
-
-    document.getElementById('btn-host-finish').addEventListener('click', async () => {
-      await updateDoc(doc(db, "rooms", currentRoomId), { status: "FINISHED", updatedAt: serverTimestamp() });
-    });
-
-    document.getElementById('btn-host-close').addEventListener('click', async () => {
-      if (confirm('ต้องการปิดห้องแข่งขันหรือไม่?')) {
-        await updateDoc(doc(db, "rooms", currentRoomId), { status: "FINISHED", updatedAt: serverTimestamp() });
-        location.reload();
-      }
-    });
-
-    // 9. ระบบกระดานจิ๊กซอว์ 3D ในหน้า Gameplay
-    function setupRound(roundNumber) {
+    // 9. Per-player puzzle gameplay and round timer
+    function stopRoundTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = null;
+      timerLastTick = 0;
+    }
+    function formatTime(ms) {
+      const total=Math.max(0,Math.ceil(ms/1000));
+      return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;
+    }
+    async function startRoundTimer() {
+      stopRoundTimer();
+      if (currentRoomStatus !== 'PLAYING' || hasAnsweredCurrentRound) return;
+      timerLastTick=Date.now();
+      timerInterval=setInterval(async()=>{
+        if(currentRoomStatus!=='PLAYING') { stopRoundTimer(); return; }
+        const now=Date.now();
+        timerRemainingMs=Math.max(0,timerRemainingMs-(now-timerLastTick));
+        timerLastTick=now;
+        const left=document.getElementById('round-time-left');
+        const fill=document.getElementById('round-progress-fill');
+        if(left) left.textContent=formatTime(timerRemainingMs);
+        const pct=Math.max(0,timerRemainingMs/roundDurationMs*100);
+        if(fill){fill.style.width=`${pct}%`;fill.classList.toggle('warning',pct<=20);}
+        const track=fill?.parentElement;if(track)track.setAttribute('aria-valuenow',String(Math.round(pct)));
+        if(timerRemainingMs<=0){stopRoundTimer();await advancePlayerRound(0,'หมดเวลา');}
+      },250);
+    }
+    async function setupRound(roundNumber, playerData = null) {
       if (!Number.isInteger(roundNumber) || roundNumber < 1 || roundNumber > QUESTIONS.length) return;
       activeRoundNumber = roundNumber;
       openedTiles = [];
       hasAnsweredCurrentRound = false;
+      advancingRound = false;
       const q = QUESTIONS[roundNumber - 1];
-
-      document.getElementById('round-indicator').textContent = `ข้อที่ ${roundNumber} / 10`;
+      const roomSnap = await getDoc(doc(db,'rooms',currentRoomId)).catch(()=>null);
+      const seconds = Math.min(600,Math.max(10,Number(roomSnap?.data()?.questionDurationSeconds||60)));
+      timerRemainingMs = seconds * 1000;
+      roundDurationMs = seconds * 1000;
+      document.getElementById('round-indicator').textContent = `ข้อที่ ${roundNumber} / ${QUESTIONS.length}`;
       document.getElementById('category-badge').textContent = `หมวดหมู่: ${q.category}`;
       document.getElementById('tiles-opened-count').textContent = '0';
       document.getElementById('game-feedback').textContent = '';
       document.getElementById('answer-input').value = '';
       document.getElementById('answer-input').disabled = false;
       document.getElementById('btn-submit-answer').disabled = false;
-
+      document.getElementById('round-progress-label').textContent = `ข้อ ${roundNumber} จาก ${QUESTIONS.length}`;
+      document.getElementById('round-time-left').textContent = formatTime(timerRemainingMs);
+      document.getElementById('round-progress-fill').style.width = '100%';
+      document.getElementById('round-progress-fill').classList.remove('warning');
       const board = document.getElementById('puzzle-board');
       board.innerHTML = '';
-
-      // สร้างแผ่น 10 ช่อง (5 คอลัมน์ x 2 แถว)
       for (let i = 0; i < 10; i++) {
-        const col = i % 5;
-        const row = Math.floor(i / 5);
-
+        const col = i % 5, row = Math.floor(i / 5);
         const tile = document.createElement('div');
-        tile.className = 'puzzle-tile';
-        tile.dataset.index = i;
-
-        tile.innerHTML = `
-          <div class="tile-inner">
-            <div class="tile-front">${i + 1}</div>
-            <div class="tile-back" style="
-              background-image: url('${q.img}');
-              background-position: ${col * 25}% ${row * 100}%;
-            "></div>
-          </div>
-        `;
-
+        tile.className = 'puzzle-tile'; tile.dataset.index = i;
+        tile.innerHTML = `<div class="tile-inner"><div class="tile-front"><span>${i + 1}</span></div><div class="tile-back" style="background-image:url('${q.img}');background-size:500% 200%;background-position:${col*25}% ${row*100}%;"></div></div>`;
         tile.addEventListener('click', () => handleTileClick(i, tile));
         board.appendChild(tile);
       }
+      if(currentRoomStatus==='PLAYING') startRoundTimer();
     }
 
     function handleTileClick(index, tileEl) {
-      if (tileEl.classList.contains('flipped')) return;
-
-      sfx.flip();
-      tileEl.classList.add('flipped');
+      if (currentRoomStatus !== 'PLAYING' || hasAnsweredCurrentRound || tileEl.classList.contains('flipped')) return;
+      sfx.flip(); tileEl.classList.add('flipped');
       openedTiles.push(index);
       document.getElementById('tiles-opened-count').textContent = openedTiles.length;
-      setTimeout(() => sfx.reveal(), 300);
+      setTimeout(() => sfx.reveal(), 220);
     }
 
-    // 10. ระบบตรวจคำตอบและคำนวณคะแนน
+    async function advancePlayerRound(earnedScore, reason='ถูกต้อง') {
+      if(advancingRound || !currentUser || !currentRoomId || !activeRoundNumber) return;
+      advancingRound=true; hasAnsweredCurrentRound=true; stopRoundTimer();
+      document.getElementById('answer-input').disabled=true;
+      document.getElementById('btn-submit-answer').disabled=true;
+      const playerRef=doc(db,'rooms',currentRoomId,'players',currentUser.uid);
+      try {
+        await runTransaction(db,async tx=>{
+          const snap=await tx.get(playerRef);
+          if(!snap.exists()) throw new Error('ไม่พบข้อมูลผู้เล่นในห้อง');
+          const p=snap.data();
+          if(p.completed || Number(p.currentRound||1)!==activeRoundNumber) return;
+          const next=activeRoundNumber+1;
+          tx.update(playerRef,{
+            score:increment(Number(earnedScore||0)),
+            correctCount:increment(earnedScore>0?1:0),
+            currentRound: next>QUESTIONS.length ? QUESTIONS.length : next,
+            lastRoundScore:Number(earnedScore||0),
+            completed:next>QUESTIONS.length,
+            roundStartedAt:Date.now(),
+            lastAnswerAt:Date.now()
+          });
+        });
+        if(earnedScore>0){sfx.correct();document.getElementById('game-feedback').style.color='var(--green)';document.getElementById('game-feedback').textContent=`ถูกต้อง! +${earnedScore.toLocaleString()} คะแนน · กำลังไปข้อถัดไป…`;}
+        else {document.getElementById('game-feedback').style.color='var(--coral)';document.getElementById('game-feedback').textContent='หมดเวลาในข้อนี้ · ไปข้อถัดไปโดยไม่ได้คะแนน';}
+        const ps=await getDoc(playerRef);
+        if(ps.exists() && ps.data().completed){
+          document.getElementById('game-feedback').textContent='🎉 คุณทำครบทั้ง 10 ข้อแล้ว! รอผู้เล่นคนอื่นจบการแข่งขัน';
+          document.getElementById('round-indicator').textContent='ครบ 10 / 10 ข้อ';
+          document.getElementById('round-progress-fill').style.width='100%';
+          document.getElementById('round-time-left').textContent='00:00';
+        }
+      }catch(err){console.error(err);document.getElementById('game-feedback').textContent='บันทึกคำตอบไม่สำเร็จ: '+friendlyError(err);hasAnsweredCurrentRound=false;document.getElementById('answer-input').disabled=false;document.getElementById('btn-submit-answer').disabled=false;}
+      finally{advancingRound=false;}
+    }
+
+    // 10. Check answer, accumulate score, and immediately advance this player.
     document.getElementById('btn-submit-answer').addEventListener('click', async () => {
-      if (hasAnsweredCurrentRound) return;
+      if (hasAnsweredCurrentRound || advancingRound || currentRoomStatus!=='PLAYING') return;
       if (!currentRoomId || !currentUser) return;
       const input = document.getElementById('answer-input').value.trim().toLowerCase();
       if (!input) return;
-
-      const roomSnap = await getDoc(doc(db, "rooms", currentRoomId));
-      const roundNum = roomSnap.data().currentRound;
-      const q = QUESTIONS[roundNum - 1];
-
+      const q = QUESTIONS[activeRoundNumber - 1];
+      if(!q) return;
       const normalize = value => value.toLocaleLowerCase('th-TH').replace(/[\s.\-–—]/g, '').trim();
       const isMatch = q.answers.some(ans => normalize(ans) === normalize(input));
       const feedback = document.getElementById('game-feedback');
-
       if (isMatch) {
-        hasAnsweredCurrentRound = true;
-        sfx.correct();
-        
-        // สูตรคะแนน: 1100 - (100 * จำนวนช่องที่เปิด) โดยขั้นต่ำคือ 100
         const opened = Math.min(10, Math.max(1, openedTiles.length));
         const earnedScore = Math.max(100, 1100 - (100 * opened));
-
-        feedback.style.color = 'var(--success)';
-        feedback.textContent = `ถูกต้อง! +${earnedScore} คะแนน (เปิดไป ${opened} ช่อง)`;
-
-        document.getElementById('answer-input').disabled = true;
-        document.getElementById('btn-submit-answer').disabled = true;
-
-        // บันทึกคะแนนลง Firestore
-        const playerRef = doc(db, "rooms", currentRoomId, "players", currentUser.uid);
-        await updateDoc(playerRef, { score: increment(earnedScore), correctCount: increment(1) });
-
-        // อัปเดต UI คะแนนผู้เล่นปัจจุบัน
-        const updated = await getDoc(playerRef);
-        document.getElementById('my-score').textContent = updated.data().score;
+        await advancePlayerRound(earnedScore,'ถูกต้อง');
       } else {
-        sfx.wrong();
-        feedback.style.color = 'var(--danger)';
-        feedback.textContent = 'ยังไม่ถูกต้อง ลองสังเกตภาพใหม่อีกครั้ง!';
+        sfx.wrong(); feedback.style.color = 'var(--coral)'; feedback.textContent = 'ยังไม่ถูกต้อง ลองสังเกตภาพใหม่อีกครั้ง!';
       }
     });
 
@@ -914,7 +1017,8 @@
         }
       }
       if (!players.length) document.getElementById('leaderboard-body').innerHTML = '<tr><td colspan="4" class="empty-state">ยังไม่มีผู้เข้าร่วมการแข่งขัน</td></tr>'; 
-      document.getElementById('p1-name').textContent = players[0]?.name || 'ยังไม่มีผู้เล่น';
+      document.getElementById('btn-result-restart').style.display = isHost ? 'inline-flex' : 'none';
+      document.getElementById('p1-name').textContent = players[0] ? `${players[0].avatarEmoji || '🌿'} ${players[0].name || 'ผู้เล่น'}` : 'ยังไม่มีผู้เล่น';
       document.getElementById('p1-score').textContent = players[0] ? `${Number(players[0].score || 0).toLocaleString()} คะแนน` : '—';
       if (!players[1]) { document.getElementById('p2-name').textContent = '—'; document.getElementById('p2-score').textContent = '—'; }
       if (!players[2]) { document.getElementById('p3-name').textContent = '—'; document.getElementById('p3-score').textContent = '—'; }
@@ -923,7 +1027,7 @@
       setTimeout(() => {
         if (players[2]) {
           document.getElementById('podium-3').classList.add('show');
-          document.getElementById('p3-name').textContent = players[2].name;
+          document.getElementById('p3-name').textContent = `${players[2].avatarEmoji || '🌿'} ${players[2].name}`;
           document.getElementById('p3-score').textContent = `${Number(players[2].score || 0).toLocaleString()} คะแนน`;
           sfx.step(3);
         }
@@ -932,7 +1036,7 @@
       setTimeout(() => {
         if (players[1]) {
           document.getElementById('podium-2').classList.add('show');
-          document.getElementById('p2-name').textContent = players[1].name;
+          document.getElementById('p2-name').textContent = `${players[1].avatarEmoji || '🌿'} ${players[1].name}`;
           document.getElementById('p2-score').textContent = `${Number(players[1].score || 0).toLocaleString()} คะแนน`;
           sfx.step(2);
         }
@@ -953,12 +1057,23 @@
       tbody.innerHTML = players.length ? players.map((p, idx) => `
         <tr>
           <td>${idx + 1}</td>
-          <td>${escapeHtml(p.name || 'ผู้เล่น')}</td>
+          <td>${escapeHtml(p.avatarEmoji || '🌿')} ${escapeHtml(p.name || 'ผู้เล่น')}</td>
           <td style="color: var(--green); font-weight: bold;">${Number(p.score || 0).toLocaleString()}</td>
           <td>${Number(p.correctCount || 0)}</td>
         </tr>
       `).join('') : '<tr><td colspan="4" class="empty-state">ยังไม่มีผู้เข้าร่วมการแข่งขัน</td></tr>';
     }
+
+    document.getElementById('btn-result-restart').addEventListener('click', async()=>{
+      if(!isHost || !currentRoomId) return;
+      if(!confirm('เริ่มเกมใหม่ในห้องเดิมและรีเซ็ตคะแนนทุกคนหรือไม่?')) return;
+      try {
+        await resetRoomPlayers(currentRoomId);
+        resultShownFor=null;
+        await updateDoc(doc(db,'rooms',currentRoomId),{status:'WAITING',currentRound:1,updatedAt:serverTimestamp()});
+        switchView('view-host');
+      } catch(err){alert(friendlyError(err));}
+    });
 
     document.getElementById('btn-back-lobby').addEventListener('click', async () => {
       if (roomUnsubscribe) roomUnsubscribe(); if (playersUnsubscribe) playersUnsubscribe();
