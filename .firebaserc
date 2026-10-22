@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "default": "game-puzzle-6767",
+    "production": "game-puzzle-6767"
+  },
+  "targets": {},
+  "etags": {}
+}

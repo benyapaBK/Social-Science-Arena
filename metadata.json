@@ -1,0 +1,6 @@
+{
+  "name": "Social-Science Arena",
+  "description": "Multiplayer 3D Isometric Jigsaw Quiz Web Application with Host Dashboard, Real-time Multiplayer, and Social Science knowledge arenas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

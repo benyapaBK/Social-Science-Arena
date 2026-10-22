@@ -1,0 +1,100 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isGoogleUser() {
+      return signedIn()
+        && request.auth.token.firebase.sign_in_provider == 'google.com'
+        && request.auth.token.email_verified == true;
+    }
+    function isHostIdentity() {
+      return signedIn()
+        && request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
+    function roomExists(roomId) { return exists(/databases/$(database)/documents/rooms/$(roomId)); }
+    function isRoomHost(roomId) {
+      return isHostIdentity() && roomExists(roomId)
+        && get(/databases/$(database)/documents/rooms/$(roomId)).data.hostUid == request.auth.uid;
+    }
+    function isRoomPlayer(roomId) {
+      return isGoogleUser() && roomExists(roomId)
+        && get(/databases/$(database)/documents/rooms/$(roomId)).data.players.keys().hasAny([request.auth.uid]);
+    }
+    function canReadRoom(roomId) { return isRoomHost(roomId) || isRoomPlayer(roomId); }
+    function hasValidRoomIdentity(roomId) {
+      return request.resource.data.roomId == roomId
+        && request.resource.data.hostUid == request.auth.uid
+        && request.resource.data.hostUid == resource.data.hostUid;
+    }
+
+    match /users/{uid} {
+      allow get: if signedIn() && request.auth.uid == uid;
+      allow list: if false;
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['displayName','photoURL','email','createdAt','lastSeenAt'])
+        && request.resource.data.keys().hasAll(['displayName','createdAt']);
+      allow update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName','photoURL','lastSeenAt']);
+      allow delete: if false;
+    }
+    match /usernames/{username} { allow read, write: if false; }
+    match /rooms/{roomId} {
+      allow get: if isGoogleUser() || canReadRoom(roomId);
+      allow list: if false;
+      allow create: if isHostIdentity()
+        && request.resource.data.keys().hasOnly([
+          'roomId', 'name', 'description', 'hostUid', 'hostEmail', 'status',
+          'createdAt', 'startedAt', 'finishedAt', 'pausedAt',
+          'totalPausedMilliseconds', 'settings', 'questionSetVersion',
+          'questions', 'currentRoundQuestion', 'acceptingPlayers', 'players'
+        ])
+        && request.resource.data.keys().hasAll([
+          'roomId', 'name', 'hostUid', 'status', 'createdAt', 'settings',
+          'questionSetVersion', 'questions', 'currentRoundQuestion',
+          'acceptingPlayers', 'players'
+        ])
+        && request.resource.data.roomId == roomId
+        && request.resource.data.hostUid == request.auth.uid;
+      allow update: if (isRoomHost(roomId)
+          && hasValidRoomIdentity(roomId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'name', 'description', 'hostEmail', 'status', 'startedAt',
+            'finishedAt', 'pausedAt', 'totalPausedMilliseconds', 'settings',
+            'questionSetVersion', 'questions', 'currentRoundQuestion',
+            'acceptingPlayers', 'players'
+          ]))
+        || (isGoogleUser()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['players'])
+          && request.resource.data.players.diff(resource.data.players).affectedKeys().hasOnly([request.auth.uid])
+          && (resource.data.players.keys().hasAny([request.auth.uid])
+            || (resource.data.status == 'waiting'
+              && resource.data.acceptingPlayers == true
+              && request.resource.data.acceptingPlayers == true
+              && resource.data.players.size() < resource.data.settings.maxPlayers)));
+      allow delete: if false;
+      match /players/{uid} {
+        allow get, list: if canReadRoom(roomId);
+        allow create, update, delete: if false;
+        match /progress/{questionId} {
+          allow get, list: if canReadRoom(roomId) && (request.auth.uid == uid || isRoomHost(roomId));
+          allow create, update, delete: if false;
+        }
+      }
+      match /results/{uid} {
+        allow get: if canReadRoom(roomId) && (request.auth.uid == uid || isRoomHost(roomId)
+          || (resource.data.visibility == 'public'
+            && get(/databases/$(database)/documents/rooms/$(roomId)).data.status == 'finished'));
+        allow list: if canReadRoom(roomId)
+          && get(/databases/$(database)/documents/rooms/$(roomId)).data.status == 'finished';
+        allow create, update, delete: if false;
+      }
+      match /auditLogs/{logId} {
+        allow get, list: if isRoomHost(roomId);
+        allow create, update, delete: if false;
+      }
+    }
+    match /questionSets/{setId} { allow get, list: if signedIn(); allow create, update, delete: if false; }
+    match /privateQuestionSets/{setId} { allow read, write: if false; }
+    match /{document=**} { allow read, write: if false; }
+  }
+}
