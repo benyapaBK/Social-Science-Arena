@@ -1,13 +1,74 @@
+export type GameMode = 'solo' | 'team';
+
 export interface Question {
   id: number;
+  // "q1.png" -> /assets/q1.png, "img:<id>" -> Firestore questionImages/<id>, "" -> no image
   imageFileName: string;
   topic: string;
   hint: string;
   acceptedAnswers: string[];
   knowledge: string;
+  pieceCount?: number; // default 10
+  enabled?: boolean;   // default true
+  updatedAt?: number;
   extraQuestionEnabled?: boolean;
   extraQuestionPrompt?: string;
   extraAcceptedAnswers?: string[];
+}
+
+export interface GameQuestionSet {
+  id: string;
+  ownerUid: string;
+  name: string;
+  mode: GameMode;
+  questions: Question[];
+  randomizeOrder: boolean;
+  minPlayers: number;
+  maxPlayers: number;
+  minPiecesForHint: number;
+  questionTimeSeconds: number;
+  timerEnabled?: boolean;
+  published?: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface PublishedGameSetSummary {
+  id: string;
+  name: string;
+  questionCount: number;
+  minPieceCount: number;
+  maxPieceCount: number;
+  questionTimeSeconds: number;
+  timerEnabled: boolean;
+  updatedAt: number;
+}
+
+export interface TeamSolved {
+  answer: string;
+  knowledge: string;
+  at: number;
+  via: 'answer' | 'host';
+  solvedBy?: string;
+  solvedByName?: string;
+}
+
+// Shared Teamwork board state. Only the room host may write it.
+export interface TeamState {
+  currentIndex: number;                // index into the enabled-question list
+  revealed: Record<string, number[]>;  // question id -> revealed piece ids (1-based)
+  solved: Record<string, TeamSolved>;  // question id -> reveal info
+  hintVisible: boolean;
+  hintText: string;
+  currentQuestionStartedAt?: number;
+  remainingTimeSeconds?: number;
+  resetAt?: Record<string, number>; // question id -> last host reset (ignores older answers)
+  updatedAt: number;
+}
+
+export interface TeamAnswer {
+  text: string;
+  at: number;
 }
 
 export interface PlayerProgress {
@@ -45,12 +106,16 @@ export interface RoomPlayer {
   lastUpdatedAt: number;
   totalResponseTime: number;
   progress?: Record<number, PlayerProgress>;
+  mode?: GameMode;
+  sessionId?: string;
+  teamAnswers?: Record<string, TeamAnswer>; // question id -> latest answer (Teamwork)
 }
 
 export interface RoomSettings {
   minPlayers: number;
   maxPlayers: number;
   questionTimeSeconds: number; // default 60s
+  timerEnabled?: boolean;
   totalTimeSeconds: number;    // default 600s
   baseScoreFirstPiece: number; // default 100
   penaltyPerPiece: number;     // default 10
@@ -71,7 +136,11 @@ export interface Room {
   name: string;
   description?: string;
   hostUid: string;
+  controllerUid?: string;
+  publishedSetId?: string;
   hostEmail?: string;
+  mode?: GameMode; // missing on legacy rooms => 'solo'
+  team?: TeamState;
   status: 'waiting' | 'ready' | 'running' | 'paused' | 'finished' | 'cancelled';
   createdAt: number;
   startedAt?: number;

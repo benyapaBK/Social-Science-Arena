@@ -5,22 +5,20 @@
 ## สิ่งที่อยู่ใน ZIP นี้
 
 - หน้า Lobby พร้อมโลโก้ UI, วิดีโอ `social-science-lobby.mp4` และพื้นหลัง `Lobby.png`
-- หน้าเข้าห้องด้วยรหัสและ Google Sign-In
-- เข้าสู่ระบบ Host ด้วยรหัส Host โดยไม่ต้องใช้ Google Sign-In
+- หน้า Battle เข้าร่วมห้องด้วยรหัส ชื่อ และอีโมจิ โดยใช้ Anonymous Authentication
+- เข้าสู่ระบบ Host ด้วย Firebase Email/Password
 - Host Dashboard, QR Code, ตัวแก้ไขคำถาม, หน้าเกม, จิ๊กซอว์ SVG, Knowledge Modal และ Leaderboard
 - ข้อมูลคำถามภาษาไทย 10 ข้อและ Assets ต้นฉบับ
 - Firebase config ของโปรเจกต์ `game-puzzle-6767`
-- `firestore.rules`, `database.rules.json` และ `firebase.json` สำหรับ Firebase Spark
+- `firestore.rules`, `database.rules.json` และ `firebase.json` สำหรับ Firebase
 
 ## สถานะที่ต้องทราบก่อนใช้งานจริง
 
-**ยังไม่ถือว่าเป็นระบบ Production และยังไม่ได้ทดสอบกับ Firebase Emulator หรือบัญชีจริงใน ZIP นี้**
+Teamwork และ Solo Practice อ่านชุดเกมที่เผยแพร่จาก Firestore โดยตรง จึงไม่ต้องใช้ Cloud Functions หรืออัปเกรดเป็น Blaze สำหรับสองโหมดนี้ การใช้ Firestore ยังอยู่ภายใต้โควตาฟรีของ Firebase; หากใช้เกินโควตาหรือเปิด Billing อาจมีค่าใช้จ่าย
 
-Host เข้าระบบด้วยรหัส `host123` และ Firebase Anonymous Authentication; ผู้เล่นยังเข้าสู่ระบบด้วย Google ได้ ระบบไม่ใช้ Custom Claims หรือ Cloud Functions และ Firestore Rules จำกัดการสร้าง/แก้ห้องไว้กับ UID ของ Anonymous Auth ที่เป็นเจ้าของห้อง อย่างไรก็ตาม รหัส Host อยู่ใน JavaScript ฝั่งเว็บและสามารถตรวจพบหรือข้าม UI ได้ จึงไม่ใช่การยืนยันตัวตนที่ปลอดภัย
+Host ใช้ Firebase Email/Password Authentication (`VITE_HOST_EMAIL` หรือค่าเริ่มต้นใน `HostAuthModal.tsx`); ผู้เล่นและผู้ควบคุม Teamwork ใช้ Firebase Anonymous Authentication โดยอัตโนมัติ ไม่ต้องกรอกรหัส Host เพื่อเริ่ม Teamwork
 
-ห้องและความคืบหน้าเกมเขียนจาก Client โดยตรงตาม Firestore Rules จึงไม่ต้องใช้แผน Blaze หรือ Cloud Functions สำหรับสิทธิ์ Host อย่างไรก็ตาม คะแนนและข้อมูลผู้เล่นยังเป็นข้อมูลที่ Client ส่งมา ไม่ควรใช้เป็นผลการแข่งขันที่ป้องกันการโกงได้ และชุดคำถาม/เฉลยที่ฝังในแอปไม่ใช่ข้อมูลลับ
-
-การตรวจคำตอบและคำนวณคะแนนที่ UI เรียกอยู่ในขณะนี้เป็น logic ฝั่ง Client สำหรับพัฒนา UI เท่านั้น **ห้ามใช้ผลคะแนนนี้เป็นผลการแข่งขันที่เชื่อถือได้** จนกว่าจะย้ายไปตรวจสอบและคำนวณฝั่ง Server
+Solo Practice และ Teamwork เลือกได้เฉพาะชุดเกมที่ Host เผยแพร่และผ่านการตรวจความพร้อม ชุดที่เผยแพร่จะอ่านได้โดยผู้ใช้ที่ลงชื่อเข้าใช้ รวมถึงคำตอบและคำใบ้ เนื่องจาก Firestore Rules ไม่สามารถซ่อนบาง field จากเอกสารที่อนุญาตให้อ่านได้ Teamwork สร้างห้องและเก็บสถานะผ่าน Firestore โดยตรง ไม่ใช้ Cloud Functions
 
 ## เทคโนโลยีที่มีอยู่ในโครงการ
 
@@ -52,25 +50,23 @@ npm run build
 ## Firebase Setup
 
 1. ใช้ Firebase Project ID `game-puzzle-6767` ที่ระบุใน `src/firebase.ts`
-2. Firebase Console → Authentication → Sign-in method: เปิด Google (ผู้เล่น) และ Anonymous (Host) ในโปรเจกต์ `game-puzzle-6767`
+2. Firebase Console → Authentication → Sign-in method: เปิด Email/Password (Host) และ Anonymous (ผู้เล่นและ Teamwork controller)
 3. Authentication → Settings → Authorized domains: เพิ่ม `localhost` สำหรับทดสอบในเครื่อง และเพิ่มโดเมน Hosting/custom domain ที่ใช้จริง
 4. สร้าง Firestore Database และ deploy `firestore.rules`
 5. เปิด Realtime Database และ deploy `database.rules.json` เพื่อใช้เฉพาะ Presence
 6. ติดตั้ง Firebase CLI แล้วล็อกอินด้วยบัญชีผู้พัฒนาที่ได้รับอนุญาต
-7. จาก root ของโครงการ รัน `firebase deploy --only firestore:rules,database,hosting`
+7. จาก root ของโครงการ Deploy Rules และเว็บด้วย `firebase deploy --only firestore:rules,database,hosting`
 8. อย่าเปิด Public Read/Write Rules เพื่อแก้ปัญหา permission denied
 
-### การเข้าสู่ระบบ Host
+### การเข้าสู่ระบบ Host และเผยแพร่ชุดเกม
 
-กรอกรหัส Host `host123` เพื่อเริ่ม Firebase Anonymous Authentication และสร้างห้องได้ ระบบแสดงข้อความเข้าสู่ระบบสำเร็จพร้อมเครื่องหมายถูก ผู้เล่นยังใช้ Google Sign-In ตามเดิม ส่วน Google account ไม่ได้รับสิทธิ์ Host ในหน้าเว็บ
+สร้าง Host account ด้วย Email/Password ใน Firebase Authentication ให้ email ตรงกับ `VITE_HOST_EMAIL` และค่าใน `firestore.rules` จากนั้นเปิดเมนูผู้ควบคุมเพื่อจัดการชุดเกม สร้างชุดเกม บันทึก และเลือก “เผยแพร่ชุดเกมให้ผู้เล่นเลือก” ชุดที่เผยแพร่ต้องมีภาพ หัวข้อ และคำตอบที่ยอมรับอย่างน้อยหนึ่งคำในทุกข้อที่เปิดใช้งาน
 
-Firestore Rules ตรวจว่า Host ใช้ Anonymous Authentication และตรวจ UID เจ้าของห้องทุกครั้งที่แก้ไข จึงไม่สามารถเปลี่ยน `hostUid` ของห้องที่มีอยู่ได้ แต่ Firebase Rules ไม่สามารถตรวจว่าผู้ใช้ผ่านช่องกรอกรหัสบนเว็บหรือไม่: ผู้ที่รู้ Firebase project config สามารถเรียก Anonymous Authentication โดยตรงและสร้างห้องของตนได้ ดังนั้นกลไกนี้เป็นเพียงด่านหน้า/ควบคุม UX ไม่ใช่การจำกัด Host ให้มีคนเดียวหรือระบบป้องกันการยกระดับสิทธิ์ที่แข็งแรง หากต้องการรักษาความปลอดภัยจริง ต้องใช้ผู้ให้บริการยืนยันตัวตนที่ Rules เชื่อถือได้หรือ trusted backend ซึ่งเกินเงื่อนไข Spark-only แบบไม่ใช้ Functions
+รายการชุดเกมอ่านจาก `questionSets` ที่ `published == true` หลังผู้เล่นลงชื่อเข้าใช้แบบ Anonymous. การเริ่ม Teamwork สร้างห้องและเอกสารคำตอบใน Firestore transaction โดยตรง; Rules ตรวจว่าชุดต้นทางยังเผยแพร่อยู่ จำกัดการเขียนห้องให้ผู้ควบคุมที่สร้างห้อง และอนุญาตให้อ่าน/แก้ชุดเกมได้เฉพาะ Host เจ้าของชุด
 
-Anonymous Host UID ผูกกับข้อมูลการเข้าสู่ระบบของเบราว์เซอร์นั้น หากล้างข้อมูลเว็บไซต์หรือออกจากระบบ อาจสูญเสียสิทธิ์แก้ไขห้องเก่าที่สร้างไว้ ควรใช้เบราว์เซอร์/อุปกรณ์เดิมและอย่าล้าง site data สำหรับการใช้งาน Host
+**ข้อควรทราบเรื่องการเผยแพร่:** ผู้ใช้ที่ลงชื่อเข้าใช้สามารถอ่านเอกสารชุดเกมที่เผยแพร่ได้ทั้งเอกสาร รวมถึงคำตอบและคำใบ้ ไม่ควรเผยแพร่เนื้อหาที่ต้องเก็บเป็นความลับ หากต้องซ่อนเฉลยจากผู้เล่น ต้องใช้ backend ที่เชื่อถือได้ เช่น Cloud Functions ซึ่งต้องเปิด Billing ตามข้อกำหนดของ Firebase
 
-การอ่านเอกสารห้องที่ล็อกอินแล้วทำได้เพื่อให้ผู้เล่นเข้าห้องด้วยรหัสได้ ข้อมูลคำถามและเฉลยในเอกสาร/Bundle ไม่ได้ถูกปกปิดจากผู้เล่น การป้องกันการโกงคะแนนหรือการซ่อนเฉลยต้องออกแบบแยกต่างหาก และอยู่นอกขอบเขต Spark-only แบบไม่มี trusted server
-
-รหัส Host `host123` เป็นรหัสตัวอย่างที่ฝังในเว็บ ห้ามใช้เป็นรหัสลับหรือรหัสผ่านจริง หากเปิด Anonymous provider แล้ว ผู้ใช้สามารถข้ามด่านนี้ด้วย Firebase SDK ได้ การแจ้งสำเร็จในแอปยืนยันเพียงว่าการสร้าง Anonymous Auth session สำเร็จ
+การอ่านเอกสารห้องเพื่อเข้าร่วม Battle ยังอาศัย Anonymous Authentication และการตรวจสถานะห้องใน Client/Rules; ข้อมูลเฉลย Battle ในโครงสร้างเดิมยังเป็นข้อจำกัดที่ควรย้ายการตรวจคำตอบไปฝั่ง Server ก่อนใช้แข่งขันที่ต้องป้องกันการโกง
 
 หาก Host แสดง `auth/admin-restricted-operation` หรือ `auth/operation-not-allowed` ให้เปิด Firebase Console ของโปรเจกต์ `game-puzzle-6767` → Authentication → Sign-in method → Anonymous → Enable แล้วบันทึก จากนั้นลองเข้าสู่ระบบใหม่ ไม่ต้อง deploy เว็บหรือ Firestore Rules ซ้ำสำหรับการเปลี่ยน provider หากเปิดแล้วแต่ยังพบ error ให้ตรวจว่าเลือกโปรเจกต์/tenant ถูกต้อง และตรวจ Firebase Authentication/Identity Platform ว่าไม่ได้ปิดกั้น Anonymous sign-in ด้วยนโยบายผู้ดูแลระบบ
 
@@ -93,7 +89,8 @@ Anonymous Host UID ผูกกับข้อมูลการเข้าส�
 - ห้ามเชื่อคะแนน, UID, Role, Host UID หรือ Timestamp ที่ Client ส่งมา
 - ห้ามเปิดเผยคำตอบก่อนผู้เล่นตอบถูกหรือหมดเวลา
 - Firestore Rules เป็นแหล่งบังคับสิทธิ์ Host; สถานะ role ใน UI ไม่ได้รับความเชื่อถือ
-- Anonymous Auth sessions ใช้สร้าง Host rooms ได้; Google Sign-In ใช้สำหรับผู้เล่น
+- Host ใช้ Email/Password; Teamwork controller และผู้เล่นใช้ Anonymous Auth
+- Public callable endpoints ส่งเฉพาะ metadata ของชุดเกม; เฉลย Teamwork อยู่ใน private room document
 - คะแนนและข้อมูลผู้เล่นยังแก้ไขได้จาก Client ของผู้เล่นเอง; ห้ามใช้เป็นคะแนนแข่งขันที่เชื่อถือได้
 - อย่าใช้ Local Storage เป็นแหล่งข้อมูลหลักของคะแนนหรือเวลาการแข่งขัน
 - Firebase Web API key เป็นค่า config ฝั่งเว็บ ไม่ใช่ Service Account Secret; ความปลอดภัยต้องมาจาก Rules, Authentication และ Server-side authorization
@@ -103,20 +100,20 @@ Anonymous Host UID ผูกกับข้อมูลการเข้าส�
 | กลุ่ม | สถานะ | เหตุผล |
 |---|---|---|
 | Assets / คำถาม 10 ข้อ | PARTIALLY IMPLEMENTED | ตรวจพบไฟล์ต้นฉบับใน ZIP และ DOCX อ่านได้; ยังไม่ได้ทดสอบใน Browser |
-| UI / Responsive | NOT VERIFIED | ยังไม่ได้รัน build หรือทดสอบหลายขนาดหน้าจอ |
-| Google Sign-In / Host Auth | PARTIALLY IMPLEMENTED | ต้องเปิด Google + Anonymous providers, deploy Firestore Rules และทดสอบกับบัญชีจริง |
-| QR / Room creation | PARTIALLY IMPLEMENTED | UI/โค้ดเดิมมีอยู่ แต่ต้องทดสอบ URL จริงและ Rules |
+| UI / Responsive | IMPLEMENTED / NOT VERIFIED | มี UI แยก Teamwork, Solo Practice, Battle และ Host; ยังไม่ได้ทดสอบหลายขนาดหน้าจอ |
+| Host Auth | IMPLEMENTED / NOT VERIFIED | Email/Password Auth ใช้ Host account; ต้องทดสอบกับบัญชีจริง |
+| Teamwork no-login flow | IMPLEMENTED / LIVE READ VERIFIED | อ่านชุดเกมและสร้างห้องผ่าน Firestore โดยตรง; ยังต้องทดสอบการสร้างห้องจริง |
+| Solo Practice published sets | IMPLEMENTED / LIVE READ VERIFIED | อ่านรายการและชุดเกมที่เผยแพร่ผ่าน Firestore โดยตรง |
+| Battle room join | PARTIALLY IMPLEMENTED | ใช้ระบบรหัสห้อง/ชื่อ/อีโมจิเดิม; ยังต้องทดสอบ Rules และหลาย sessions |
 | Multiplayer Real-Time | PARTIALLY IMPLEMENTED | การเขียนห้องและผู้เล่นใช้ Firestore Rules; ยังต้องทดสอบหลาย sessions และเพิ่ม validation ป้องกันการโกงคะแนน |
 | Server timer / pause-resume | BLOCKED | ต้องใช้ Server-side state เป็นแหล่งความจริง |
 | Server-side scoring / anti-cheat | BLOCKED | Client logic ยังมีอยู่; ห้ามถือเป็นคะแนนจริง |
-| Firestore Rules | NOT VERIFIED | สร้าง Rules แบบ least privilege แล้ว แต่ยังไม่ได้ทดสอบด้วย Emulator Suite |
-| Production deployment | NOT DEPLOYED | ไม่ได้ deploy จากสภาพแวดล้อมนี้ |
+| Firestore Rules | DEPLOYED / NOT EMULATOR-TESTED | Rules รองรับการอ่านชุดเผยแพร่และสร้าง Teamwork room แบบ client |
+| Production deployment | PARTIAL | Direct Firestore flow ถูก Deploy แล้ว; Cloud Functions ไม่ได้ใช้งาน |
 
 ## ขั้นตอนถัดไปที่จำเป็น
 
-1. ติดตั้ง dependencies และแก้ข้อผิดพลาดจาก `npm run lint` / `npm run build`
-2. ทดสอบ Host Auth และ Firestore Rules ด้วย Firebase Emulator Suite หรือบัญชีทดสอบ
-3. ย้ายการสร้าง/เข้าห้อง, สถานะ Ready, เวลา, เปิดชิ้น, ขอคำใบ้, ส่งคำตอบ, คะแนน, pause/resume และผลลัพธ์ไป Server-side transactions
-4. แยกข้อมูลคำถามสาธารณะออกจากเฉลยที่เก็บฝั่ง Server
-5. เพิ่ม Emulator tests สำหรับ Rules และ Functions
-6. ทดสอบด้วย 3 บัญชี/Browser sessions และตรวจ Acceptance Tests ก่อน  production
+1. ทดสอบ Firestore Rules โดยเฉพาะสิทธิ์ controller, Host และผู้เล่น Battle
+2. ทดสอบการสร้างห้อง Teamwork จริง รวมถึงการปิดห้อง
+3. ทดสอบ Host Auth, Solo Practice และ Battle ด้วยบัญชี/Browser sessions จริง
+4. ย้ายการตรวจคำตอบและคำนวณคะแนน Battle ไป trusted server ก่อนใช้คะแนนเป็นผลการแข่งขันที่เชื่อถือได้

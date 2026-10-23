@@ -1,147 +1,153 @@
 export interface PuzzlePieceDefinition {
-  id: number;
+  id: number; // 1-based, unique per board
   row: number;
   col: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
   center: { x: number; y: number };
   pathData: string;
-  clipPathId: string;
-  viewBox: string;
 }
 
-export const PUZZLE_COLS = 5;
-export const PUZZLE_ROWS = 2;
+export interface PuzzleLayout {
+  cols: number;
+  rows: number;
+  width: number;
+  height: number;
+  pieces: PuzzlePieceDefinition[];
+}
+
 export const PUZZLE_WIDTH = 1000;
-export const PUZZLE_HEIGHT = 650;
+export const MIN_PIECES = 2;
+export const MAX_PIECES = 60;
+export const DEFAULT_PIECES = 10;
+export const PIECE_PRESETS = [4, 6, 9, 12, 16, 25] as const;
+
+export function clampPieceCount(value: unknown): number {
+  const n = Math.round(Number(value));
+  if (!Number.isFinite(n)) return DEFAULT_PIECES;
+  return Math.min(MAX_PIECES, Math.max(MIN_PIECES, n));
+}
 
 /**
- * Predefined tab orientations for a 5x2 jigsaw puzzle grid (10 pieces).
- * 1 = tab outwards (positive offset)
- * -1 = tab inwards / blank (negative offset)
- * 0 = flat border
+ * Picks rows x cols (rows * cols === count) whose cells are closest to square
+ * for the given image aspect ratio (width / height). Never assumes a perfect square count.
  */
-// Horizontal borders between Row 0 and Row 1 (5 segments)
-const HORIZONTAL_TABS = [1, -1, 1, -1, 1];
-
-// Vertical borders between Col c and Col c+1 (2 rows x 4 inner columns)
-// row 0: col 0-1, 1-2, 2-3, 3-4
-// row 1: col 0-1, 1-2, 2-3, 3-4
-const VERTICAL_TABS = [
-  [-1, 1, -1, 1], // row 0
-  [1, -1, 1, -1]  // row 1
-];
-
-/**
- * Generates an authentic interlocking jigsaw edge between (x1, y1) and (x2, y2).
- * direction: 1 for tab outwards, -1 for tab inwards (blank), 0 for flat edge
- */
-function createJigsawEdge(
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number,
-  tabDir: number
-): string {
-  if (tabDir === 0) {
-    return `L ${x2.toFixed(1)} ${y2.toFixed(1)} `;
+export function chooseGrid(count: number, aspect = 1.5): { cols: number; rows: number } {
+  const total = clampPieceCount(count);
+  const safeAspect = Number.isFinite(aspect) && aspect > 0 ? aspect : 1;
+  let best = { cols: total, rows: 1 };
+  let bestScore = Infinity;
+  for (let rows = 1; rows <= total; rows++) {
+    if (total % rows !== 0) continue;
+    const cols = total / rows;
+    const cellAspect = safeAspect * rows / cols; // cell width / cell height
+    const score = Math.abs(Math.log(cellAspect));
+    if (score < bestScore - 1e-9) {
+      bestScore = score;
+      best = { cols, rows };
+    }
   }
+  return best;
+}
 
+// Deterministic PRNG so every client builds identical tab shapes.
+function mulberry32(seed: number) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Classic interlocking tab between (x1,y1) and (x2,y2). tabDir: 1 out, -1 in, 0 flat.
+function edge(x1: number, y1: number, x2: number, y2: number, tabDir: number): string {
+  const f = (n: number) => n.toFixed(1);
+  if (tabDir === 0) return `L ${f(x2)} ${f(y2)} `;
   const dx = x2 - x1;
   const dy = y2 - y1;
-  const len = Math.sqrt(dx * dx + dy * dy);
-  
-  // Unit vectors along the edge (ux, uy) and perpendicular to it (nx, ny)
+  const len = Math.hypot(dx, dy);
   const ux = dx / len;
   const uy = dy / len;
-  // Perpendicular vector pointing "outwards" relative to edge direction
   const nx = -uy * tabDir;
   const ny = ux * tabDir;
-
-  // Key relative points along the edge (0 to 1) and tab depth (perpendicular)
-  const p = (u: number, n: number) => {
-    const px = x1 + u * len * ux + n * len * nx;
-    const py = y1 + u * len * uy + n * len * ny;
-    return `${px.toFixed(1)},${py.toFixed(1)}`;
-  };
-
-  // Classic interlocking tab shape with smooth cubic bezier curves:
-  // 1. Line to base of neck (0.36)
-  // 2. Curve inward slightly into neck (0.38, -0.04) then flare out into round head bulb (0.42, 0.16)
-  // 3. Bulb crown peak (0.50, 0.22)
-  // 4. Return curve through opposite side of head (0.58, 0.16) to neck (0.62, -0.04)
-  // 5. Connect back to baseline (0.64, 0) and line to end
+  const p = (u: number, n: number) => `${f(x1 + u * len * ux + n * len * nx)},${f(y1 + u * len * uy + n * len * ny)}`;
   return (
     `L ${p(0.36, 0)} ` +
-    `C ${p(0.38, -0.04)} ${p(0.38, 0.16)} ${p(0.44, 0.20)} ` +
-    `C ${p(0.47, 0.23)} ${p(0.53, 0.23)} ${p(0.56, 0.20)} ` +
+    `C ${p(0.38, -0.04)} ${p(0.38, 0.16)} ${p(0.44, 0.2)} ` +
+    `C ${p(0.47, 0.23)} ${p(0.53, 0.23)} ${p(0.56, 0.2)} ` +
     `C ${p(0.62, 0.16)} ${p(0.62, -0.04)} ${p(0.64, 0)} ` +
-    `L ${x2.toFixed(1)} ${y2.toFixed(1)} `
+    `L ${f(x2)} ${f(y2)} `
   );
 }
 
-/**
- * Builds all 10 interlocking 3D jigsaw puzzle piece paths for a 1000x650 viewport.
- */
-export function generate10PiecePuzzle(): PuzzlePieceDefinition[] {
+export function buildPuzzleLayout(pieceCount: number, imageAspect = 1.5, seed = 1): PuzzleLayout {
+  const aspect = Math.min(2.5, Math.max(0.4, Number.isFinite(imageAspect) && imageAspect > 0 ? imageAspect : 1.5));
+  const { cols, rows } = chooseGrid(pieceCount, aspect);
+  const width = PUZZLE_WIDTH;
+  const height = Math.round(PUZZLE_WIDTH / aspect);
+  const cw = width / cols;
+  const ch = height / rows;
+  const rand = mulberry32(seed * 7919 + cols * 31 + rows);
+
+  // Internal seams: horizontal (between row r and r+1) and vertical (between col c and c+1).
+  const horizontal: number[][] = Array.from({ length: Math.max(0, rows - 1) }, () =>
+    Array.from({ length: cols }, () => (rand() < 0.5 ? 1 : -1)));
+  const vertical: number[][] = Array.from({ length: rows }, () =>
+    Array.from({ length: Math.max(0, cols - 1) }, () => (rand() < 0.5 ? 1 : -1)));
+
   const pieces: PuzzlePieceDefinition[] = [];
-  const colW = PUZZLE_WIDTH / PUZZLE_COLS;
-  const rowH = PUZZLE_HEIGHT / PUZZLE_ROWS;
-
-  let idCounter = 1;
-
-  for (let r = 0; r < PUZZLE_ROWS; r++) {
-    for (let c = 0; c < PUZZLE_COLS; c++) {
-      const xLeft = c * colW;
-      const xRight = (c + 1) * colW;
-      const yTop = r * rowH;
-      const yBottom = (r + 1) * rowH;
-
-      // Determine tabs for 4 sides: Top, Right, Bottom, Left
-      // Top edge (from top-left to top-right)
-      const topTab = r === 0 ? 0 : -HORIZONTAL_TABS[c]; // Opposite of bottom of row r-1
-
-      // Right edge (from top-right to bottom-right)
-      const rightTab = c === PUZZLE_COLS - 1 ? 0 : VERTICAL_TABS[r][c];
-
-      // Bottom edge (from bottom-right to bottom-left)
-      const bottomTab = r === PUZZLE_ROWS - 1 ? 0 : HORIZONTAL_TABS[c];
-
-      // Left edge (from bottom-left to top-left)
-      const leftTab = c === 0 ? 0 : -VERTICAL_TABS[r][c - 1];
-
-      // Build path clockwise starting at top-left
-      let path = `M ${xLeft.toFixed(1)} ${yTop.toFixed(1)} `;
-
-      // Top edge: (xLeft, yTop) -> (xRight, yTop)
-      path += createJigsawEdge(xLeft, yTop, xRight, yTop, topTab);
-
-      // Right edge: (xRight, yTop) -> (xRight, yBottom)
-      path += createJigsawEdge(xRight, yTop, xRight, yBottom, rightTab);
-
-      // Bottom edge: (xRight, yBottom) -> (xLeft, yBottom)
-      path += createJigsawEdge(xRight, yBottom, xLeft, yBottom, bottomTab);
-
-      // Left edge: (xLeft, yBottom) -> (xLeft, yTop)
-      path += createJigsawEdge(xLeft, yBottom, xLeft, yTop, leftTab);
-
-      path += 'Z';
-
-      const pieceId = idCounter++;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x0 = c * cw;
+      const x1 = (c + 1) * cw;
+      const y0 = r * ch;
+      const y1 = (r + 1) * ch;
+      const top = r === 0 ? 0 : -horizontal[r - 1][c];
+      const right = c === cols - 1 ? 0 : vertical[r][c];
+      const bottom = r === rows - 1 ? 0 : horizontal[r][c];
+      const left = c === 0 ? 0 : -vertical[r][c - 1];
+      const path =
+        `M ${x0.toFixed(1)} ${y0.toFixed(1)} ` +
+        edge(x0, y0, x1, y0, top) +
+        edge(x1, y0, x1, y1, right) +
+        edge(x1, y1, x0, y1, bottom) +
+        edge(x0, y1, x0, y0, left) +
+        'Z';
       pieces.push({
-        id: pieceId,
+        id: r * cols + c + 1,
         row: r,
         col: c,
-        center: {
-          x: xLeft + colW / 2,
-          y: yTop + rowH / 2
-        },
-        pathData: path,
-        clipPathId: `piece-clip-${pieceId}`,
-        viewBox: `0 0 ${PUZZLE_WIDTH} ${PUZZLE_HEIGHT}`
+        x: x0,
+        y: y0,
+        width: cw,
+        height: ch,
+        center: { x: x0 + cw / 2, y: y0 + ch / 2 },
+        pathData: path
       });
     }
   }
-
-  return pieces;
+  return { cols, rows, width, height, pieces };
 }
 
-export const PUZZLE_PIECES = generate10PiecePuzzle();
+export function isValidPieceId(id: number, pieceCount: number): boolean {
+  return Number.isInteger(id) && id >= 1 && id <= clampPieceCount(pieceCount);
+}
+
+/** Picks one hidden piece id uniformly at random, or null when everything is revealed. */
+export function pickRandomHiddenPiece(pieceCount: number, revealed: number[], rng: () => number = Math.random): number | null {
+  const total = clampPieceCount(pieceCount);
+  const shown = new Set(revealed);
+  const hidden: number[] = [];
+  for (let id = 1; id <= total; id++) if (!shown.has(id)) hidden.push(id);
+  if (hidden.length === 0) return null;
+  return hidden[Math.floor(rng() * hidden.length)];
+}
+
+export function allPieceIds(pieceCount: number): number[] {
+  return Array.from({ length: clampPieceCount(pieceCount) }, (_, i) => i + 1);
+}

@@ -1,399 +1,795 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { onIdTokenChanged, signInWithPopup, signOut, User } from 'firebase/auth';
-import { AlertCircle, BookOpen, CheckCircle2, CircleHelp, Crown, Gamepad2, LogIn, Plus, ShieldCheck, Sparkles, Users, Wifi, WifiOff } from 'lucide-react';
-import { auth, googleProvider } from './firebase';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { onAuthStateChanged, signInAnonymously, signOut, type User } from 'firebase/auth';
+import { FirebaseError } from 'firebase/app';
+import { ArrowLeft, Loader2, Shuffle, Sparkles, Users, User as UserIcon, WifiOff } from 'lucide-react';
+import { auth } from './firebase';
 import { gameService, DEFAULT_ROOM_SETTINGS } from './services/gameService';
 import { DEFAULT_QUESTIONS } from './data/defaultQuestions';
-import { EMOJI_AVATARS } from './data/emojis';
-import { Room, RoomPlayer, PlayerProgress, Question } from './types';
+import type { EmojiAvatar } from './data/emojis';
+import type { GameMode, GameQuestionSet, PlayerProgress, PublishedGameSetSummary, Question, Room } from './types';
 import { Navbar } from './components/Navbar';
-import { HostAuthModal } from './components/HostAuthModal';
+import { HostAuthModal, HOST_EMAIL } from './components/HostAuthModal';
 import { HostRoomSetup } from './components/HostRoomSetup';
 import { HostDashboard } from './components/HostDashboard';
 import { PlayerLobby } from './components/PlayerLobby';
-import { JigsawBoard3D } from './components/JigsawBoard3D';
+import JigsawBoard from './components/JigsawBoard';
+import TeamBoard, { getActiveQuestions } from './components/TeamBoard';
+import ModeSelector from './components/ModeSelector';
 import { KnowledgeModal } from './components/KnowledgeModal';
 import { PodiumLeaderboard } from './components/PodiumLeaderboard';
 import { HowToPlayModal } from './components/HowToPlayModal';
 import { QuestionEditorModal } from './components/QuestionEditorModal';
-import { KnowledgeArchiveModal } from './components/KnowledgeArchiveModal';
+import { ToastHost, toast } from './components/Toast';
 import { soundService } from './services/soundService';
+import { clampPieceCount, DEFAULT_PIECES, isValidPieceId, pickRandomHiddenPiece } from './services/puzzleService';
+import ModeFlowModal, { type ModeFlow } from './components/ModeFlowModal';
+import SoloPracticeGame from './components/SoloPracticeGame';
 
-type AppUser = { uid: string; email?: string | null; displayName: string; photoURL?: string | null; isHost?: boolean };
-type View = 'lobby' | 'host-setup' | 'host' | 'player-lobby' | 'game' | 'results';
+type View = 'mode' | 'code' | 'host-setup' | 'host' | 'player-setup' | 'game' | 'practice-game' | 'results';
+
+const blankProgress = (questionId: number): PlayerProgress => ({
+  questionId, piecesRevealed: 0, revealedPieceIds: [], attemptCount: 0, wrongAttemptCount: 0,
+  answeredCorrectly: false, answerStatus: 'unanswered', questionScore: 0, hintUsed: false, knowledgeRead: false
+});
+
+const modeName = (m: GameMode | undefined) => (m === 'team' ? 'Teamwork' : 'Battle');
 
 export default function App() {
-  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
-  const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
-  const [view, setView] = useState<View>('lobby');
+  const [user, setUser] = useState<User | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [authFailed, setAuthFailed] = useState(false);
+  const [view, setView] = useState<View>('mode');
+  const [mode, setMode] = useState<GameMode | null>(null);
   const [room, setRoom] = useState<Room | null>(null);
-  const [roomCode, setRoomCode] = useState(new URLSearchParams(window.location.search).get('room') || '');
+  const [roomCode, setRoomCode] = useState(() => (new URLSearchParams(window.location.search).get('room') || '').toUpperCase());
+  const [codeError, setCodeError] = useState('');
   const [roomName, setRoomName] = useState('Social Science Challenge');
+  const [setupMode, setSetupMode] = useState<GameMode>('solo');
+  const [setupQuestions, setSetupQuestions] = useState<Question[]>(() => DEFAULT_QUESTIONS.map(q => ({ ...q, pieceCount: q.pieceCount ?? DEFAULT_PIECES, enabled: q.enabled ?? true })));
+  const [setupQuestionSetName, setSetupQuestionSetName] = useState('ชุดเกมใหม่');
+  const [savedQuestionSets, setSavedQuestionSets] = useState<GameQuestionSet[]>([]);
+  const [publishedQuestionSets, setPublishedQuestionSets] = useState<PublishedGameSetSummary[]>([]);
+  const [activePracticeSet, setActivePracticeSet] = useState<GameQuestionSet | null>(null);
+  const [modeFlow, setModeFlow] = useState<ModeFlow | null>(null);
+  const [publicSetsLoading, setPublicSetsLoading] = useState(false);
+  const [publicSetsError, setPublicSetsError] = useState('');
+  const [activeQuestionSetId, setActiveQuestionSetId] = useState<string | null>(null);
+  const [questionSetsLoading, setQuestionSetsLoading] = useState(false);
+  const [questionSetSaving, setQuestionSetSaving] = useState(false);
+  const [setupEditorOpen, setSetupEditorOpen] = useState(false);
   const [minPlayers, setMinPlayers] = useState(1);
   const [maxPlayers, setMaxPlayers] = useState(40);
+  const [randomize, setRandomize] = useState(false);
+  const [minPiecesForHint, setMinPiecesForHint] = useState(DEFAULT_ROOM_SETTINGS.minPiecesForHint);
+  const [questionTimeSeconds, setQuestionTimeSeconds] = useState(DEFAULT_ROOM_SETTINGS.questionTimeSeconds);
+  const [timerEnabled, setTimerEnabled] = useState(true);
+  const [setupPublished, setSetupPublished] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [timeLeft, setTimeLeft] = useState(60);
   const [answer, setAnswer] = useState('');
-  const [notice, setNotice] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
-  const [loading, setLoading] = useState(false);
   const [hostModal, setHostModal] = useState(false);
   const [howToPlay, setHowToPlay] = useState(false);
-  const [editorOpen, setEditorOpen] = useState(false);
-  const [questions, setQuestions] = useState<Question[]>(DEFAULT_QUESTIONS);
-  const [randomize, setRandomize] = useState(false);
+  const [editorQuestions, setEditorQuestions] = useState<Question[] | null>(null);
   const [showHint, setShowHint] = useState(false);
   const [showKnowledge, setShowKnowledge] = useState(false);
-  const [showKnowledgeArchive, setShowKnowledgeArchive] = useState(false);
   const [localProgress, setLocalProgress] = useState<Record<number, PlayerProgress>>({});
-  const [connection, setConnection] = useState(navigator.onLine);
+  const [teamReviewQuestions, setTeamReviewQuestions] = useState<Question[] | null>(null);
+  const [teamReviewError, setTeamReviewError] = useState('');
+  const [online, setOnline] = useState(navigator.onLine);
   const autoAdvanceTimeout = useRef<number | null>(null);
   const handledDeadlineQuestion = useRef<number | null>(null);
   const autoAdvancePending = useRef(false);
+  const createRoomInFlight = useRef(false);
+  const createTeamRoomInFlight = useRef(false);
 
-  useEffect(() => onIdTokenChanged(auth, async u => {
-    setFirebaseUser(u);
-    if (u) {
-      try {
-        const isHost = u.isAnonymous;
-        setCurrentUser({
-          uid: u.uid,
-          email: u.email,
-          displayName: u.isAnonymous ? 'Host' : u.displayName || 'ผู้เล่น',
-          photoURL: u.photoURL,
-          isHost
-        });
-      } catch {
-        setCurrentUser({
-          uid: u.uid,
-          email: u.email,
-          displayName: u.isAnonymous ? 'Host' : u.displayName || 'ผู้เล่น',
-          photoURL: u.photoURL,
-          isHost: u.isAnonymous
-        });
-      }
-    } else {
-      setCurrentUser(null);
-    }
+  const isHost = !!user && !user.isAnonymous && user.email === HOST_EMAIL;
+  const uid = user?.uid || '';
+  const isTeamController = !!room && room.mode === 'team' && room.hostUid === uid && room.controllerUid === uid;
+
+  // Players never see a login: they get a silent anonymous session.
+  useEffect(() => onAuthStateChanged(auth, u => {
+    setUser(u);
+    setAuthReady(true);
+    setAuthFailed(false);
   }), []);
+
   useEffect(() => {
-    const online = () => setConnection(true), offline = () => setConnection(false);
-    window.addEventListener('online', online); window.addEventListener('offline', offline);
-    return () => { window.removeEventListener('online', online); window.removeEventListener('offline', offline); };
+    if (!authReady || view !== 'mode' || !new URLSearchParams(window.location.search).get('room')) return;
+    setMode('solo');
+    setView('code');
+  }, [authReady, view]);
+
+  useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener('online', on);
+    window.addEventListener('offline', off);
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
   }, []);
+
   useEffect(() => {
-    if (!successMessage) return;
-    const timeout = window.setTimeout(() => setSuccessMessage(''), 5000);
-    return () => window.clearTimeout(timeout);
-  }, [successMessage]);
-  useEffect(() => {
-    if (!room?.roomId) return;
+    if (!room?.roomId || view === 'practice-game') return;
     return gameService.subscribeToRoom(room.roomId, latest => { if (latest) setRoom(latest); });
-  }, [room?.roomId]);
-  const player = room && currentUser ? room.players?.[currentUser.uid] : undefined;
+  }, [room?.roomId, view]);
+
+  useEffect(() => {
+    if (view !== 'host-setup' || !isHost || !uid) return;
+    let alive = true;
+    setQuestionSetsLoading(true);
+    gameService.getQuestionSets(uid)
+      .then(sets => { if (alive) setSavedQuestionSets(sets); })
+      .catch(() => { if (alive) toast('โหลดชุดเกมที่บันทึกไว้ไม่สำเร็จ ตรวจสอบ Firestore Rules แล้วลองอีกครั้ง', 'error'); })
+      .finally(() => { if (alive) setQuestionSetsLoading(false); });
+    return () => { alive = false; };
+  }, [view, isHost, uid]);
+
+  const activeQuestions = useMemo(() => (room ? getActiveQuestions(room) : []), [room]);
+  const player = room && uid ? room.players?.[uid] : undefined;
   const questionIndex = player?.currentQuestion || 1;
-  const question = room?.questions?.find(q => q.id === questionIndex) || room?.questions?.[questionIndex - 1];
-  const progress = (player?.progress?.[question?.id || questionIndex] || localProgress[question?.id || questionIndex] || null) as PlayerProgress | null;
+  const question = activeQuestions[questionIndex - 1];
+  const pieceCount = clampPieceCount(question?.pieceCount ?? DEFAULT_PIECES);
+  const progress = (question ? player?.progress?.[question.id] || localProgress[question.id] : null) || null;
   const revealed = progress?.revealedPieceIds || [];
   const answered = !!progress?.answeredCorrectly;
-  const isHostOfRoom = !!(room && currentUser && room.hostUid === currentUser.uid && currentUser.isHost);
+  const isTeam = room?.mode === 'team';
+  const hintThreshold = Math.min(room?.settings.minPiecesForHint ?? 5, pieceCount);
+  const activeSetupQuestions = setupQuestions.filter(question => question.enabled !== false);
+  const canPublishSetup = activeSetupQuestions.length > 0 && activeSetupQuestions.every(question =>
+    !!question.imageFileName?.trim()
+    && !!question.topic?.trim()
+    && Array.isArray(question.acceptedAnswers)
+    && question.acceptedAnswers.some(value => typeof value === 'string' && !!value.trim())
+  );
 
+  // Move players between lobby / game / results as the host changes the room status.
   useEffect(() => {
-    if (!room || !currentUser || currentUser.uid === room.hostUid) return;
-
-    const joined = room.players?.[currentUser.uid]?.ready;
-    if (!joined) return;
-
-    if ((room.status === 'running' || room.status === 'paused') && view === 'player-lobby') {
+    if (!room || !uid || room.hostUid === uid || !room.players?.[uid]) return;
+    if ((room.status === 'running' || room.status === 'paused') && view === 'player-setup') {
       setView('game');
-      setNotice(room.status === 'paused' ? 'โฮสต์พักเกมไว้ชั่วคราว คุณกลับมาเล่นต่อได้เมื่อโฮสต์เริ่มอีกครั้ง' : 'โฮสต์เริ่มเกมแล้ว ขอให้สนุกกับการเล่น!');
-    } else if (room.status === 'finished' && view === 'game') {
+      toast('โฮสต์เริ่มเกมแล้ว ขอให้สนุกกับการเล่น!', 'success');
+    } else if (room.status === 'finished' && (view === 'game' || view === 'player-setup')) {
       setView('results');
-      setShowKnowledgeArchive(true);
-    } else if (room.status === 'cancelled' && view === 'player-lobby') {
-      setView('lobby');
-      setNotice('ห้องเกมนี้ถูกปิดโดยโฮสต์แล้ว');
+    } else if (room.status === 'cancelled' && (view === 'player-setup' || view === 'game')) {
+      toast('ห้องเกมนี้ถูกปิดโดยโฮสต์แล้ว', 'info');
+      resetToMode();
     }
-  }, [room, currentUser, view]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [room, uid, view]);
 
   useEffect(() => {
-    if (view === 'game' && (progress?.answerStatus === 'correct' || progress?.answerStatus === 'timeout')) {
-      setShowKnowledge(true);
-    }
-  }, [view, question?.id, progress?.answerStatus]);
+    if (view === 'game' && !isTeam && (progress?.answerStatus === 'correct' || progress?.answerStatus === 'timeout')) setShowKnowledge(true);
+  }, [view, isTeam, question?.id, progress?.answerStatus]);
 
   const nextQuestion = useCallback(async (automatic = false) => {
-    if (!room || !currentUser || !question) return;
+    if (!room || !uid || !question) return;
     if (room.status !== 'running') {
       if (automatic && room.status === 'paused') autoAdvancePending.current = true;
       return;
     }
     autoAdvancePending.current = false;
-    if (autoAdvanceTimeout.current !== null) {
-      window.clearTimeout(autoAdvanceTimeout.current);
-      autoAdvanceTimeout.current = null;
-    }
+    if (autoAdvanceTimeout.current !== null) { window.clearTimeout(autoAdvanceTimeout.current); autoAdvanceTimeout.current = null; }
     handledDeadlineQuestion.current = null;
     const nextId = questionIndex + 1;
     try {
-      await gameService.advancePlayerQuestion(room.roomId, currentUser.uid, nextId);
-      setShowKnowledge(false); setShowHint(false); setAnswer(''); setNotice('');
-      if (nextId > room.questions.length) {
-        setView('results');
-        setShowKnowledgeArchive(true);
-        return;
-      }
+      await gameService.advancePlayerQuestion(room.roomId, uid, nextId);
+      setShowKnowledge(false); setShowHint(false); setAnswer('');
+      if (nextId > activeQuestions.length) { setView('results'); return; }
       setTimeLeft(room.settings.questionTimeSeconds);
-    } catch (error) {
-      console.error('Could not advance player question:', error);
-      setNotice('บันทึกการเปลี่ยนข้อไม่สำเร็จ โปรดตรวจการเชื่อมต่อแล้วกดลองอีกครั้ง');
+    } catch {
+      toast('บันทึกการเปลี่ยนข้อไม่สำเร็จ โปรดตรวจการเชื่อมต่อแล้วลองอีกครั้ง', 'error');
     }
-  }, [room, currentUser, question, questionIndex]);
+  }, [room, uid, question, questionIndex, activeQuestions.length]);
 
+  // Solo timer: remaining time is derived from timestamps, so intervals only trigger re-renders.
   useEffect(() => {
-    if (view !== 'game' || !room || !player || !question || room.status === 'paused') return;
-    if (room.status !== 'running') return;
+    if (view !== 'game' || isTeam || !room || !player || !question || room.status !== 'running' || room.settings.timerEnabled === false) return;
     let lastUrgentTick = -1;
     const tick = () => {
       const now = Date.now();
       const qStart = player.currentQuestionStartedAt || room.startedAt || now;
-      const pausedAt = room.status === 'paused' ? room.pausedAt || now : now;
       const pausedBeforeQuestion = Math.max(0, (room.totalPausedMilliseconds || 0) - (player.pauseBaselineMilliseconds || 0));
-      const elapsed = Math.max(0, pausedAt - qStart - pausedBeforeQuestion);
+      const elapsed = Math.max(0, now - qStart - pausedBeforeQuestion);
       const seconds = Math.max(0, room.settings.questionTimeSeconds - Math.floor(elapsed / 1000));
       setTimeLeft(seconds);
-      if (seconds > 0 && seconds <= 10 && seconds !== lastUrgentTick) {
-        soundService.playTick(true);
-        lastUrgentTick = seconds;
-      }
+      if (seconds > 0 && seconds <= 10 && seconds !== lastUrgentTick) { soundService.playTick(true); lastUrgentTick = seconds; }
       if (seconds === 0 && handledDeadlineQuestion.current !== question.id) {
         handledDeadlineQuestion.current = question.id;
         if (progress?.answeredCorrectly) {
-          if (showKnowledge) {
-            autoAdvanceTimeout.current = window.setTimeout(() => {
-              void nextQuestion(true);
-            }, 1000);
-          }
+          if (showKnowledge) autoAdvanceTimeout.current = window.setTimeout(() => void nextQuestion(true), 1000);
           return;
         }
         if (progress?.answerStatus === 'timeout') {
           setShowKnowledge(true);
-          autoAdvanceTimeout.current = window.setTimeout(() => {
-            void nextQuestion(true);
-          }, 1500);
+          autoAdvanceTimeout.current = window.setTimeout(() => void nextQuestion(true), 1500);
           return;
         }
         soundService.playTimeUp();
-        const timedOut: PlayerProgress = { ...(progress || { questionId: question.id, piecesRevealed: revealed.length, revealedPieceIds: revealed, attemptCount: 0, wrongAttemptCount: 0, answeredCorrectly: false, answerStatus: 'unanswered' as const, questionScore: 0, hintUsed: false, knowledgeRead: false }), answerStatus: 'timeout' };
+        const timedOut: PlayerProgress = { ...(progress || { ...blankProgress(question.id), piecesRevealed: revealed.length, revealedPieceIds: revealed }), answerStatus: 'timeout' };
         setLocalProgress(p => ({ ...p, [question.id]: timedOut }));
         setShowKnowledge(true);
-        void gameService.updatePlayerProgress({
-          roomId: room.roomId,
-          uid: currentUser?.uid || player.uid,
-          questionId: question.id,
-          progressUpdate: timedOut
-        }).catch(error => {
-          console.error('Could not save timed-out question:', error);
-          setNotice('หมดเวลา แต่บันทึกสถานะไม่สำเร็จ โปรดตรวจการเชื่อมต่อก่อนเล่นต่อ');
-        });
-        autoAdvanceTimeout.current = window.setTimeout(() => {
-          void nextQuestion(true);
-        }, 1500);
+        void gameService.updatePlayerProgress({ roomId: room.roomId, uid, questionId: question.id, progressUpdate: timedOut })
+          .catch(() => toast('หมดเวลา แต่บันทึกสถานะไม่สำเร็จ โปรดตรวจการเชื่อมต่อ', 'error'));
+        autoAdvanceTimeout.current = window.setTimeout(() => void nextQuestion(true), 1500);
       }
     };
-    tick(); const id = window.setInterval(tick, 250);
+
+    tick();
+    const id = window.setInterval(tick, 250);
     return () => window.clearInterval(id);
-  }, [view, room, player, question, progress, revealed.length, currentUser, nextQuestion, showKnowledge]);
+  }, [view, isTeam, room, player, question, progress, revealed, uid, nextQuestion, showKnowledge]);
 
   useEffect(() => {
-    if (room?.status === 'running' && autoAdvancePending.current) {
-      void nextQuestion(true);
-    }
+    if (room?.status === 'running' && autoAdvancePending.current) void nextQuestion(true);
   }, [room?.status, nextQuestion]);
 
-  useEffect(() => () => {
-    if (autoAdvanceTimeout.current !== null) window.clearTimeout(autoAdvanceTimeout.current);
-  }, []);
+  useEffect(() => () => { if (autoAdvanceTimeout.current !== null) window.clearTimeout(autoAdvanceTimeout.current); }, []);
 
-  const loginGoogle = async () => {
-    const cred = await signInWithPopup(auth, googleProvider);
-    setCurrentUser({ uid: cred.user.uid, email: cred.user.email, displayName: cred.user.displayName || 'ผู้เล่น', photoURL: cred.user.photoURL, isHost: false });
-    return cred.user;
+  const clearRoomParam = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('room');
+    window.history.replaceState({}, '', url);
   };
-  const logout = async () => {
+
+  function resetToMode() {
+    setRoom(null); setMode(null); setView('mode'); setRoomCode(''); setCodeError('');
+    setModeFlow(null); setActivePracticeSet(null);
+    setTeamReviewQuestions(null); setTeamReviewError('');
+    setLocalProgress({}); setShowKnowledge(false); setShowHint(false); setAnswer('');
+    clearRoomParam();
+  }
+
+  const leave = async () => {
+    if (room && uid && !isHost && (room.status === 'waiting' || (room.mode === 'team' && ['running', 'paused'].includes(room.status))) && room.players?.[uid]) {
+      await gameService.leaveRoom(room.roomId, uid).catch(() => undefined);
+    }
+    resetToMode();
+  };
+
+  const hostGesture = () => {
+    if (!isHost) { setHostModal(true); return; }
+    setView(room && room.hostUid === uid ? 'host' : 'host-setup');
+  };
+
+  const hostLogout = async () => {
     await signOut(auth);
-    setFirebaseUser(null); setCurrentUser(null); setRoom(null); setView('lobby');
+    resetToMode();
+    toast('ออกจากโหมดควบคุมแล้ว', 'info');
   };
-  const createRoom = async () => {
-    if (!currentUser?.isHost) { setHostModal(true); return; }
-    setLoading(true); setNotice('');
+
+  const openPublishedSets = async (flow: 'team-sets' | 'practice-sets') => {
+    setModeFlow(flow);
+    setPublicSetsError('');
+    setPublicSetsLoading(true);
     try {
-      const made = await gameService.createRoom({ hostUid: currentUser.uid, hostEmail: currentUser.email || undefined, name: roomName.trim() || 'Social Science Challenge', customSettings: { ...DEFAULT_ROOM_SETTINGS, minPlayers, maxPlayers, randomizeQuestionOrder: randomize }, customQuestions: questions });
-      setRoom(made); setRoomCode(made.roomId); setView('host');
-      const url = new URL(window.location.href); url.searchParams.set('room', made.roomId); window.history.replaceState({}, '', url);
-    } catch (e: any) { setNotice(e?.message || 'สร้างห้องไม่สำเร็จ'); }
-    finally { setLoading(false); }
+      let activeUser = auth.currentUser;
+      if (!activeUser) {
+        const credential = await signInAnonymously(auth);
+        activeUser = credential.user;
+        setUser(activeUser);
+        setAuthFailed(false);
+      }
+      const sets = await gameService.getPublishedQuestionSets();
+      setPublishedQuestionSets(sets);
+    } catch (error) {
+      console.error('Could not load published game sets:', error);
+      setPublishedQuestionSets([]);
+      if (error instanceof FirebaseError && error.code === 'permission-denied') {
+        setPublicSetsError('ไม่มีสิทธิ์อ่านชุดเกมที่เผยแพร่ กรุณาตรวจว่า Deploy Firestore Rules เวอร์ชันล่าสุดแล้ว');
+      } else if (error instanceof FirebaseError && error.code === 'unauthenticated') {
+        setPublicSetsError('ยืนยันตัวตนไม่สำเร็จ กรุณาตรวจว่าเปิด Anonymous Authentication ใน Firebase แล้วลองใหม่');
+      } else {
+        setPublicSetsError('โหลดชุดเกมที่เผยแพร่ไม่สำเร็จ กรุณาตรวจการเชื่อมต่อ Firebase และลองอีกครั้ง');
+      }
+    } finally {
+      setPublicSetsLoading(false);
+    }
   };
+
+  const selectMode = (m: GameMode) => {
+    setCodeError('');
+    if (m === 'team') {
+      setMode('team');
+      void openPublishedSets('team-sets');
+      return;
+    }
+    setMode(null);
+    setModeFlow('choice');
+  };
+
+  const startPublishedSet = async (set: PublishedGameSetSummary) => {
+    if (modeFlow === 'team-sets') {
+      if (createTeamRoomInFlight.current) return;
+      createTeamRoomInFlight.current = true;
+      setLoading(true);
+      setPublicSetsLoading(true);
+      try {
+        const made = await gameService.createTeamRoomFromPublishedSet(set.id, set.name);
+        setRoom(made);
+        setRoomCode(made.roomId);
+        setMode('team');
+        setModeFlow(null);
+        setView('game');
+        const url = new URL(window.location.href);
+        url.searchParams.delete('room');
+        window.history.replaceState({}, '', url);
+      } catch (error) {
+        console.error('Teamwork room creation failed:', error);
+        toast('สร้างเกม Teamwork ไม่สำเร็จ ตรวจสอบชุดเกมและการเชื่อมต่อแล้วลองอีกครั้ง', 'error');
+      } finally {
+        createTeamRoomInFlight.current = false;
+        setPublicSetsLoading(false);
+        setLoading(false);
+      }
+      return;
+    }
+    setPublicSetsLoading(true);
+    setPublicSetsError('');
+    try {
+      const fullSet = await gameService.getPublishedQuestionSet(set.id);
+      setActivePracticeSet(fullSet);
+      setMode('solo');
+      setModeFlow(null);
+      setView('practice-game');
+      setRoom(null);
+      setLocalProgress({});
+      setTimeLeft(fullSet.questionTimeSeconds);
+    } catch (error) {
+      console.error('Could not load selected published game set:', error);
+      setPublicSetsError('โหลดชุดเกมนี้ไม่สำเร็จ อาจถูกถอนการเผยแพร่แล้ว กรุณาเลือกชุดอื่นหรือลองอีกครั้ง');
+    } finally {
+      setPublicSetsLoading(false);
+    }
+  };
+
+  const chooseBattle = () => {
+    setMode('solo');
+    setModeFlow(null);
+    setView('code');
+  };
+
+  const createRoom = async () => {
+    const hostUser = auth.currentUser || user;
+    if (!hostUser || loading || createRoomInFlight.current) return;
+    createRoomInFlight.current = true;
+    setLoading(true);
+    try {
+      const made = await gameService.createRoom({
+        hostUid: hostUser.uid, hostEmail: hostUser.email || undefined, name: roomName.trim() || 'Social Science Challenge', mode: setupMode,
+        customSettings: { ...DEFAULT_ROOM_SETTINGS, minPlayers, maxPlayers, minPiecesForHint, questionTimeSeconds, timerEnabled, randomizeQuestionOrder: randomize },
+        customQuestions: setupQuestions
+      });
+      setRoom(made); setRoomCode(made.roomId); setMode(made.mode || 'solo'); setView('host');
+      const url = new URL(window.location.href); url.searchParams.set('room', made.roomId); window.history.replaceState({}, '', url);
+    } catch (error) {
+      console.error('Room creation failed:', error);
+      if (error instanceof FirebaseError && error.code === 'permission-denied') {
+        toast('Firestore ปฏิเสธการสร้างห้อง กรุณา Deploy firestore.rules เวอร์ชันล่าสุดก่อน', 'error');
+      } else {
+        toast('สร้างห้องไม่สำเร็จ ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง', 'error');
+      }
+    } finally {
+      createRoomInFlight.current = false;
+      setLoading(false);
+    }
+  };
+
+  const loadQuestionSet = (setId: string) => {
+    const saved = savedQuestionSets.find(set => set.id === setId);
+    if (!saved) return;
+    setSetupQuestions(saved.questions.map(q => ({
+      ...q,
+      pieceCount: q.pieceCount ?? DEFAULT_PIECES,
+      enabled: q.enabled ?? true
+    })));
+    setSetupQuestionSetName(saved.name);
+    setActiveQuestionSetId(saved.id);
+    setSetupMode('solo');
+    setSetupPublished(saved.published === true);
+    setRandomize(saved.randomizeOrder);
+    setMinPlayers(saved.minPlayers);
+    setMaxPlayers(saved.maxPlayers);
+    setMinPiecesForHint(saved.minPiecesForHint ?? DEFAULT_ROOM_SETTINGS.minPiecesForHint);
+    setQuestionTimeSeconds(saved.questionTimeSeconds ?? DEFAULT_ROOM_SETTINGS.questionTimeSeconds);
+    setTimerEnabled(saved.timerEnabled ?? true);
+    toast(`โหลดชุดเกม “${saved.name}” แล้ว`, 'success');
+  };
+
+  const createNewQuestionSet = () => {
+    setSetupQuestions(DEFAULT_QUESTIONS.map(q => ({ ...q, pieceCount: q.pieceCount ?? DEFAULT_PIECES, enabled: q.enabled ?? true })));
+    setSetupQuestionSetName('ชุดเกมใหม่');
+    setActiveQuestionSetId(null);
+    setSetupMode('solo');
+    setSetupPublished(false);
+    setRandomize(false);
+    setSetupEditorOpen(false);
+  };
+
+  const saveQuestionSet = async () => {
+    if (!uid || !setupQuestionSetName.trim() || questionSetSaving) return;
+    if (setupPublished && !canPublishSetup) {
+      toast('เผยแพร่ไม่ได้: ตรวจสอบให้ทุกข้อที่เปิดใช้งานมีภาพ หัวข้อ และคำตอบก่อน', 'error');
+      return;
+    }
+    setQuestionSetSaving(true);
+    try {
+      const saved = await gameService.saveQuestionSet({
+        ...(activeQuestionSetId ? { id: activeQuestionSetId } : {}),
+        ownerUid: uid,
+        name: setupQuestionSetName.trim(),
+        mode: setupMode,
+        questions: setupQuestions,
+        randomizeOrder: randomize,
+        minPlayers,
+        maxPlayers,
+        minPiecesForHint,
+        questionTimeSeconds,
+        timerEnabled,
+        published: setupPublished
+      });
+      setSavedQuestionSets(previous => [saved, ...previous.filter(set => set.id !== saved.id)]);
+      setActiveQuestionSetId(saved.id);
+      setSetupQuestionSetName(saved.name);
+      toast(setupPublished ? `บันทึกและเผยแพร่ชุดเกม “${saved.name}” แล้ว` : `บันทึกชุดเกม “${saved.name}” แล้ว`, 'success');
+    } catch (error) {
+      console.error('Could not save question set:', error);
+      toast('บันทึกชุดเกมไม่สำเร็จ กรุณาตรวจ Firestore Rules แล้วลองอีกครั้ง', 'error');
+    } finally {
+      setQuestionSetSaving(false);
+    }
+  };
+
   const enterRoom = async () => {
     const code = roomCode.trim().toUpperCase();
-    if (!code) { setNotice('กรุณากรอกรหัสห้อง'); return; }
-    setLoading(true); setNotice('');
+    if (!code) { setCodeError('กรุณากรอกรหัสห้อง'); return; }
+    setLoading(true); setCodeError('');
     try {
-      const found = await gameService.getRoom(code);
-      if (!found) { setNotice('ไม่พบห้องนี้ ตรวจสอบรหัสห้องอีกครั้ง'); return; }
-      setShowKnowledgeArchive(false);
-      setRoom(found);
-      if (currentUser && found.hostUid === currentUser.uid && currentUser.isHost) {
-        setView('host');
-      } else if (currentUser && found.players?.[currentUser.uid]?.ready && (found.status === 'running' || found.status === 'paused')) {
-        setView('game');
-      } else if (currentUser && found.players?.[currentUser.uid]?.ready && found.status === 'finished') {
-        setView('results');
-        setShowKnowledgeArchive(true);
-      } else if (found.status === 'running' || found.status === 'paused' || found.status === 'finished') {
-        setNotice('ห้องนี้เริ่มเกมแล้ว ไม่สามารถเข้าร่วมเป็นผู้เล่นใหม่ได้');
-        setView('lobby');
-      } else {
-        setView('player-lobby');
+      let activeUser = auth.currentUser;
+      if (!activeUser) {
+        try {
+          const credential = await signInAnonymously(auth);
+          activeUser = credential.user;
+          setUser(activeUser);
+          setAuthFailed(false);
+        } catch {
+          setAuthFailed(true);
+          setCodeError('ไม่สามารถเชื่อมต่อระบบผู้เล่นได้ กรุณาลองอีกครั้ง');
+          return;
+        }
       }
-    } catch (e: any) { setNotice(e?.message || 'ไม่สามารถเข้าห้องได้'); }
-    finally { setLoading(false); }
+      const activeUid = activeUser.uid;
+      const found = await gameService.getRoom(code);
+      if (!found) { setCodeError('ไม่พบรหัสห้องนี้'); return; }
+      if (found.hostUid === activeUid && activeUser.email === HOST_EMAIL && !activeUser.isAnonymous) { setRoom(found); setMode(found.mode || 'solo'); setView('host'); return; }
+      const roomMode = found.mode || 'solo';
+      if (mode && roomMode !== mode) { setCodeError(`ห้องนี้เป็นโหมด ${modeName(roomMode)} กรุณาย้อนกลับและเลือกโหมดให้ตรงกัน`); return; }
+      if (found.status === 'cancelled') { setCodeError('ห้องนี้ถูกปิดแล้ว'); return; }
+      const mine = found.players?.[activeUid];
+      setRoom(found);
+      if (mine && (found.status === 'running' || found.status === 'paused')) setView('game');
+      else if (mine && found.status === 'finished') setView('results');
+      else if (!((found.status === 'waiting' || (['running', 'paused'].includes(found.status) && roomMode === 'team')) && found.acceptingPlayers)) {
+        setRoom(null);
+        setCodeError('ห้องนี้ปิดรับผู้เล่นแล้ว');
+      } else setView('player-setup');
+    } catch {
+      setCodeError('ไม่สามารถเข้าห้องได้ กรุณาลองอีกครั้ง');
+    } finally { setLoading(false); }
   };
-  const joinPlayer = async (p: RoomPlayer) => {
-    if (!room || !currentUser) return;
-    const result = await gameService.joinRoom({ roomId: room.roomId, uid: currentUser.uid, displayName: p.displayName, photoURL: currentUser.photoURL || undefined, avatarEmoji: p.avatarEmoji, avatarBgColor: p.avatarBgColor });
-    if (!result.success) throw new Error(result.error || 'เข้าห้องไม่สำเร็จ');
-    if (result.room) setRoom(result.room);
-    const joinedRoom = result.room || room;
-    setView(joinedRoom.status === 'running' || joinedRoom.status === 'paused' ? 'game' : 'player-lobby');
-  };
-  const startGame = async () => {
-    if (!room || !currentUser || room.hostUid !== currentUser.uid) return;
-    if (Object.keys(room.players || {}).length < room.settings.minPlayers) { setNotice('จำนวนผู้เล่นยังไม่ถึงขั้นต่ำ'); return; }
-    const startedAt = Date.now();
-    const players = Object.fromEntries(Object.entries(room.players).map(([uid, roomPlayer]) => [uid, {
-      ...roomPlayer,
-      currentQuestionStartedAt: startedAt,
-      pauseBaselineMilliseconds: 0
-    }]));
-    const started = await gameService.updateRoom(room.roomId, { status: 'running', acceptingPlayers: false, startedAt, currentRoundQuestion: 1, totalPausedMilliseconds: 0, players });
-    if (started) setRoom(started);
-    setNotice('เริ่มเกมแล้ว ผู้เล่นสามารถเริ่มทำข้อของตนเองได้');
-  };
-  const revealPiece = async (pieceId: number) => {
-    if (!room || !currentUser || !question || answered || revealed.includes(pieceId) || room.status !== 'running') return;
-    const ids = [...revealed, pieceId];
-    const next: PlayerProgress = { ...(progress || { questionId: question.id, piecesRevealed: 0, revealedPieceIds: [], attemptCount: 0, wrongAttemptCount: 0, answeredCorrectly: false, answerStatus: 'unanswered', questionScore: 0, hintUsed: false, knowledgeRead: false }), piecesRevealed: ids.length, revealedPieceIds: ids };
-    setLocalProgress(p => ({ ...p, [question.id]: next }));
-    if (player) await gameService.updatePlayerProgress({ roomId: room.roomId, uid: currentUser.uid, questionId: question.id, progressUpdate: { piecesRevealed: ids.length, revealedPieceIds: ids } });
-  };
-  const submitAnswer = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!room || room.status !== 'running' || !currentUser || !question || !answer.trim() || answered) return;
-    const attempts = (progress?.attemptCount || 0) + 1;
-    const correct = gameService.checkAnswer(answer, question.acceptedAnswers);
-    if (!correct) {
-      soundService.playWrong();
-      const wrong: PlayerProgress = { ...(progress || { questionId: question.id, piecesRevealed: revealed.length, revealedPieceIds: revealed, attemptCount: 0, wrongAttemptCount: 0, answeredCorrectly: false, answerStatus: 'unanswered', questionScore: 0, hintUsed: false, knowledgeRead: false }), attemptCount: attempts, wrongAttemptCount: (progress?.wrongAttemptCount || 0) + 1, answerStatus: 'unanswered' };
-      setLocalProgress(p => ({ ...p, [question.id]: wrong })); setNotice('ยังไม่ถูกต้อง ลองสังเกตภาพอีกครั้งนะ'); return;
+
+  const joinPlayer = async (displayName: string, avatar: EmojiAvatar): Promise<string | null> => {
+    if (!room || !uid) return 'ไม่พบห้อง';
+    try {
+      const result = await gameService.joinRoom({ roomId: room.roomId, uid, displayName, avatarEmoji: avatar.emoji, avatarBgColor: avatar.bgGrad });
+      if (!result.success) return result.error || 'เข้าห้องไม่สำเร็จ';
+      if (result.room) setRoom(result.room);
+      const joined = result.room || room;
+      // Solo rooms start a player's own 60s clock only when the host has started the room.
+      setView(joined.status === 'running' || joined.status === 'paused' ? 'game' : 'player-setup');
+      return null;
+    } catch {
+      return 'ไม่สามารถเข้าร่วมห้องได้ กรุณาลองอีกครั้ง';
     }
-    soundService.playCorrect();
-    const score = gameService.calculateQuestionScore({ piecesRevealed: Math.max(1, revealed.length), timeRemainingSeconds: timeLeft, isCorrect: true, comboStreak: player?.comboStreak || 0, hintUsed: !!progress?.hintUsed, settings: room.settings });
-    const nextCombo = (player?.comboStreak || 0) + 1;
-    const next: PlayerProgress = { ...(progress || { questionId: question.id, piecesRevealed: revealed.length, revealedPieceIds: revealed, attemptCount: 0, wrongAttemptCount: 0, answeredCorrectly: false, answerStatus: 'unanswered', questionScore: 0, hintUsed: false, knowledgeRead: false }), attemptCount: attempts, answeredCorrectly: true, answerStatus: 'correct', questionScore: score.totalQuestionScore, answerTimestamp: Date.now(), submittedAnswer: answer };
-    if (nextCombo >= 3) soundService.playCombo(nextCombo);
-    setLocalProgress(p => ({ ...p, [question.id]: next })); setShowKnowledge(true); setNotice(`ตอบถูก! +${score.totalQuestionScore} คะแนน`);
-    await gameService.updatePlayerProgress({ roomId: room.roomId, uid: currentUser.uid, questionId: question.id, progressUpdate: next, scoreDelta: score.totalQuestionScore, isCorrect: true, newCombo: nextCombo, responseTimeSeconds: room.settings.questionTimeSeconds - timeLeft });
   };
-  const openHint = async () => {
-    if (!room || room.status !== 'running' || !question || revealed.length < (room.settings.minPiecesForHint || 5) || progress?.hintUsed) return;
-    const next = { ...(progress || { questionId: question.id, piecesRevealed: revealed.length, revealedPieceIds: revealed, attemptCount: 0, wrongAttemptCount: 0, answeredCorrectly: false, answerStatus: 'unanswered' as const, questionScore: 0, hintUsed: false, knowledgeRead: false }), hintUsed: true };
-    setLocalProgress(p => ({ ...p, [question.id]: next })); setShowHint(true);
-    if (room && currentUser && player) await gameService.updatePlayerProgress({ roomId: room.roomId, uid: currentUser.uid, questionId: question.id, progressUpdate: { hintUsed: true } });
+
+  const startGame = async () => {
+    if (!room || room.hostUid !== uid) { toast('คุณไม่มีสิทธิ์ควบคุมห้องนี้', 'error'); return; }
+    if (Object.keys(room.players || {}).length < room.settings.minPlayers) { toast('จำนวนผู้เล่นยังไม่ถึงขั้นต่ำ', 'error'); return; }
+    if (activeQuestions.length === 0) { toast('ยังไม่มีคำถามที่เปิดใช้งาน', 'error'); return; }
+    const startedAt = Date.now();
+    const updates: Record<string, unknown> = { status: 'running', acceptingPlayers: false, startedAt, currentRoundQuestion: 1, totalPausedMilliseconds: 0 };
+    for (const id of Object.keys(room.players || {})) {
+      updates[`players.${id}.currentQuestionStartedAt`] = startedAt;
+      updates[`players.${id}.pauseBaselineMilliseconds`] = 0;
+    }
+    try { await gameService.updateRoom(room.roomId, updates); toast('เริ่มเกมแล้ว', 'success'); }
+    catch { toast('ไม่สามารถบันทึกข้อมูลได้ กรุณาลองอีกครั้ง', 'error'); }
   };
+
   const finishGame = async () => {
-    if (room) { const updated = await gameService.updateRoom(room.roomId, { status: 'finished', finishedAt: Date.now() }); if (updated) setRoom(updated); }
-    setView('results');
-    setShowKnowledgeArchive(true);
+    if (!room) return;
+    try { await gameService.updateRoom(room.roomId, { status: 'finished', finishedAt: Date.now() }); setView('results'); }
+    catch { toast('ไม่สามารถจบเกมได้ กรุณาลองอีกครั้ง', 'error'); }
   };
+
+  const finishTeamwork = async () => {
+    if (!room) return;
+    setTeamReviewQuestions(null);
+    setTeamReviewError('');
+    try {
+      try {
+        const questions = await gameService.getPrivateQuestions(room.roomId);
+        if (!questions?.length) throw new Error('No private Teamwork questions were found.');
+        setTeamReviewQuestions(questions.filter(question => question.enabled !== false));
+      } catch (error) {
+        console.error('Could not load Teamwork review questions:', error);
+        setTeamReviewError('โหลดคลังทบทวนความรู้ไม่สำเร็จ แต่ยังดูสรุปผลการเล่นได้');
+      }
+      await gameService.updateRoom(room.roomId, { status: 'finished', finishedAt: Date.now() });
+      setView('results');
+      toast('จบเกม Teamwork แล้ว', 'success');
+    } catch {
+      toast('จบเกมไม่สำเร็จ กรุณาตรวจการเชื่อมต่อแล้วลองอีกครั้ง', 'error');
+    }
+  };
+
+  const closeRoom = async () => {
+    if (!room) return;
+    try { await gameService.updateRoom(room.roomId, { status: 'cancelled', acceptingPlayers: false }); resetToMode(); }
+    catch { toast('ไม่สามารถปิดห้องได้ กรุณาลองอีกครั้ง', 'error'); }
+  };
+
   const pauseGame = async () => {
     if (!room || room.status !== 'running') return;
-    try {
-      const paused = await gameService.updateRoom(room.roomId, { status: 'paused', pausedAt: Date.now() });
-      if (paused) setRoom(paused);
-    } catch (error) {
-      console.error('Could not pause game:', error);
-      setNotice('พักเกมไม่สำเร็จ กรุณาตรวจการเชื่อมต่อแล้วลองอีกครั้ง');
-    }
+    try { await gameService.updateRoom(room.roomId, { status: 'paused', pausedAt: Date.now() }); }
+    catch { toast('พักเกมไม่สำเร็จ กรุณาลองอีกครั้ง', 'error'); }
   };
+
   const resumeGame = async () => {
     if (!room || room.status !== 'paused') return;
     const resumedAt = Date.now();
     const pauseDuration = Math.max(0, resumedAt - (room.pausedAt || resumedAt));
-    const totalPausedMilliseconds = (room.totalPausedMilliseconds || 0) + pauseDuration;
-    const players = Object.fromEntries(Object.entries(room.players || {}).map(([uid, roomPlayer]) => [uid, {
-      ...roomPlayer,
-      currentQuestionStartedAt: (roomPlayer.currentQuestionStartedAt || room.startedAt || resumedAt)
-        + Math.max(0, (room.totalPausedMilliseconds || 0) - (roomPlayer.pauseBaselineMilliseconds || 0))
-        + pauseDuration,
-      pauseBaselineMilliseconds: totalPausedMilliseconds
-    }]));
-    try {
-      const resumed = await gameService.updateRoom(room.roomId, {
-        status: 'running',
-        totalPausedMilliseconds,
-        players
-      });
-      if (resumed) setRoom(resumed);
-    } catch (error) {
-      console.error('Could not resume game:', error);
-      setNotice('เล่นเกมต่อไม่สำเร็จ กรุณาตรวจการเชื่อมต่อแล้วลองอีกครั้ง');
+    const total = (room.totalPausedMilliseconds || 0) + pauseDuration;
+    const updates: Record<string, unknown> = { status: 'running', totalPausedMilliseconds: total };
+    for (const [id, p] of Object.entries(room.players || {})) {
+      updates[`players.${id}.currentQuestionStartedAt`] = (p.currentQuestionStartedAt || room.startedAt || resumedAt)
+        + Math.max(0, (room.totalPausedMilliseconds || 0) - (p.pauseBaselineMilliseconds || 0)) + pauseDuration;
+      updates[`players.${id}.pauseBaselineMilliseconds`] = total;
     }
-  };
-  const results = useMemo(() => room ? gameService.calculateFinalLeaderboard(room) : [], [room]);
-  const saveQuestions = async (updated: Question[], shuffle: boolean) => {
-    setQuestions(updated); setRandomize(shuffle); setEditorOpen(false);
-    if (room && currentUser?.uid === room.hostUid) await gameService.updateRoom(room.roomId, { questions: shuffle ? [...updated].sort(() => Math.random() - .5) : updated, settings: { ...room.settings, randomizeQuestionOrder: shuffle } });
+    try { await gameService.updateRoom(room.roomId, updates); }
+    catch { toast('เล่นเกมต่อไม่สำเร็จ กรุณาลองอีกครั้ง', 'error'); }
   };
 
-  return <div className="min-h-screen text-[#F5F0E6] bg-[#0B1715]">
-    <div className="fixed inset-0 pointer-events-none opacity-[0.12]" style={{ backgroundImage: 'radial-gradient(circle at 15% 10%, #62F5C5 0, transparent 28%), radial-gradient(circle at 90% 70%, #D6B36A 0, transparent 25%)' }} />
-    <div className="relative z-10">
-      <Navbar currentUser={currentUser} onOpenHowToPlay={() => setHowToPlay(true)} onLogout={logout} onNavigateLobby={() => setView('lobby')} isHostView={view === 'host'} />
-      {!connection && <div className="bg-amber-900/70 px-4 py-2 text-center text-sm"><WifiOff className="inline w-4 h-4 mr-2"/>การเชื่อมต่อขาดหาย — ความคืบหน้าออนไลน์อาจยังไม่ซิงก์</div>}
-      {notice && <div role="status" className="mx-auto mt-4 max-w-5xl rounded-xl border border-amber-300/30 bg-amber-900/30 p-3 text-sm flex items-center gap-2"><AlertCircle className="w-4 h-4 shrink-0"/><span>{notice}</span><button className="ml-auto underline" onClick={() => setNotice('')}>ปิด</button></div>}
-      {successMessage && <div role="status" aria-live="polite" className="mx-auto mt-4 flex max-w-5xl items-center gap-2 rounded-xl border border-emerald-300/40 bg-emerald-900/50 p-3 text-sm text-emerald-100"><CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-300"/><span>{successMessage}</span><button className="ml-auto underline" onClick={() => setSuccessMessage('')}>ปิด</button></div>}
-      {view === 'lobby' && <main className="mx-auto max-w-7xl px-4 py-7 sm:py-12">
-        <section className="relative overflow-hidden rounded-[2rem] border border-[#62F5C5]/20 bg-[#103B32]/35 shadow-2xl">
-          <div className="absolute inset-0 opacity-[0.16] bg-cover bg-center" style={{backgroundImage:"url('/assets/Lobby.png')"}}/>
-          <div className="relative grid lg:grid-cols-[1.1fr_.9fr] items-center gap-8 p-6 sm:p-10 lg:p-14">
+  const openEditor = async () => {
+    if (!room) return;
+    try {
+      const list = room.mode === 'team' ? await gameService.getPrivateQuestions(room.roomId) : room.questions;
+      setEditorQuestions(list && list.length ? list : room.questions);
+    } catch { toast('ไม่สามารถโหลดคำถามได้ กรุณาลองอีกครั้ง', 'error'); }
+  };
+
+  const saveQuestions = async (updated: Question[], shuffle: boolean) => {
+    if (!room || room.hostUid !== uid) throw new Error('forbidden');
+    const ordered = room.mode !== 'team' && shuffle ? [...updated].sort(() => Math.random() - 0.5) : updated;
+    await gameService.saveQuestions(room, ordered);
+    await gameService.updateRoom(room.roomId, { 'settings.randomizeQuestionOrder': shuffle });
+  };
+
+  // ---- Solo gameplay ----
+  const revealPiece = async (pieceId: number) => {
+    if (!room || !uid || !question || answered || revealed.includes(pieceId) || room.status !== 'running' || timeLeft <= 0) return;
+    if (!isValidPieceId(pieceId, pieceCount)) return;
+    soundService.playPieceClick();
+    const ids = [...revealed, pieceId];
+    const next: PlayerProgress = { ...(progress || blankProgress(question.id)), piecesRevealed: ids.length, revealedPieceIds: ids };
+    setLocalProgress(p => ({ ...p, [question.id]: next }));
+    try { await gameService.updatePlayerProgress({ roomId: room.roomId, uid, questionId: question.id, progressUpdate: { piecesRevealed: ids.length, revealedPieceIds: ids } }); }
+    catch { toast('ไม่สามารถบันทึกข้อมูลได้ กรุณาลองอีกครั้ง', 'error'); }
+  };
+
+  const randomReveal = () => {
+    const id = pickRandomHiddenPiece(pieceCount, revealed);
+    if (id === null) { toast('เปิดจิ๊กซอว์ครบทุกชิ้นแล้ว', 'info'); return; }
+    void revealPiece(id);
+  };
+
+  const submitAnswer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!room || room.status !== 'running' || !uid || !question || !answer.trim() || answered || timeLeft <= 0) return;
+    const attempts = (progress?.attemptCount || 0) + 1;
+    const base = progress || { ...blankProgress(question.id), piecesRevealed: revealed.length, revealedPieceIds: revealed };
+    if (!gameService.checkAnswer(answer, question.acceptedAnswers)) {
+      soundService.playWrong();
+      setLocalProgress(p => ({ ...p, [question.id]: { ...base, attemptCount: attempts, wrongAttemptCount: (progress?.wrongAttemptCount || 0) + 1, answerStatus: 'unanswered' } }));
+      toast('ยังไม่ถูกต้อง ลองสังเกตภาพอีกครั้งนะ', 'info');
+      return;
+    }
+    soundService.playCorrect();
+    const score = gameService.calculateQuestionScore({ piecesRevealed: Math.max(1, revealed.length), timeRemainingSeconds: room.settings.timerEnabled === false ? 0 : timeLeft, isCorrect: true, comboStreak: player?.comboStreak || 0, hintUsed: !!progress?.hintUsed, settings: room.settings });
+    const nextCombo = (player?.comboStreak || 0) + 1;
+    const next: PlayerProgress = { ...base, attemptCount: attempts, answeredCorrectly: true, answerStatus: 'correct', questionScore: score.totalQuestionScore, answerTimestamp: Date.now(), submittedAnswer: answer };
+    if (nextCombo >= 3) soundService.playCombo(nextCombo);
+    setLocalProgress(p => ({ ...p, [question.id]: next }));
+    setShowKnowledge(true);
+    toast(`ตอบถูก! +${score.totalQuestionScore} คะแนน`, 'success');
+    try {
+      await gameService.updatePlayerProgress({ roomId: room.roomId, uid, questionId: question.id, progressUpdate: next, scoreDelta: score.totalQuestionScore, isCorrect: true, newCombo: nextCombo, responseTimeSeconds: room.settings.questionTimeSeconds - timeLeft });
+    } catch { toast('ไม่สามารถบันทึกข้อมูลได้ กรุณาลองอีกครั้ง', 'error'); }
+  };
+
+  const openHint = async () => {
+    if (!room || room.status !== 'running' || !question || revealed.length < hintThreshold || progress?.hintUsed) return;
+    setLocalProgress(p => ({ ...p, [question.id]: { ...(progress || { ...blankProgress(question.id), piecesRevealed: revealed.length, revealedPieceIds: revealed }), hintUsed: true } }));
+    setShowHint(true);
+    if (player) await gameService.updatePlayerProgress({ roomId: room.roomId, uid, questionId: question.id, progressUpdate: { hintUsed: true } }).catch(() => undefined);
+  };
+
+  const results = useMemo(() => (room ? gameService.calculateFinalLeaderboard(room) : []), [room]);
+  const canPlay = room?.status === 'running' && (room.settings.timerEnabled === false || timeLeft > 0) && !answered;
+  const urgent = room?.settings.timerEnabled !== false && timeLeft <= 10;
+
+  const body = (() => {
+    if (!authReady && view !== 'mode') return <div className="grid min-h-[60vh] place-items-center"><div role="status" className="flex items-center gap-2 font-semibold"><Loader2 className="animate-spin" aria-hidden />กำลังเตรียมเกม…</div></div>;
+
+    if (view === 'mode') {
+      return (
+        <>
+          {isHost && (
+            <div className="mx-auto mt-4 flex max-w-5xl flex-wrap items-center gap-2 rounded-2xl border border-lavender bg-lavender-soft px-4 py-2 text-sm">
+              <span className="font-semibold text-lavender-deep">โหมดควบคุมเปิดอยู่</span>
+              <button type="button" className="btn btn-sm btn-lavender" onClick={() => setView('host-setup')}>สร้างห้องใหม่</button>
+              <button type="button" className="btn btn-sm btn-secondary" onClick={() => void hostLogout()}>ออกจากโหมดควบคุม</button>
+            </div>
+          )}
+          <ModeSelector onSelect={selectMode} onOpenHowToPlay={() => setHowToPlay(true)} />
+        </>
+      );
+    }
+
+    if (view === 'practice-game' && activePracticeSet) {
+      return <SoloPracticeGame gameSet={activePracticeSet} onExit={resetToMode} />;
+    }
+
+    if (view === 'code') {
+      return (
+        <main className="mx-auto max-w-md px-4 py-10">
+          <button type="button" className="btn btn-secondary btn-sm mb-4" onClick={() => { setView('mode'); setMode(null); setCodeError(''); }}><ArrowLeft size={16} aria-hidden />เปลี่ยนโหมด</button>
+          <form className="card space-y-4 p-6" onSubmit={e => { e.preventDefault(); void enterRoom(); }}>
+            <span className={`badge ${mode === 'team' ? 'badge-lavender' : ''}`}>{mode === 'team' ? <Users size={13} aria-hidden /> : <UserIcon size={13} aria-hidden />}โหมด {modeName(mode ?? undefined)}</span>
+            <h1 className="text-2xl font-bold">กรอกรหัสห้อง</h1>
+            <p className="text-sm text-ink-soft">ขอรหัสห้อง 6 ตัวอักษรจากโฮสต์ ไม่ต้องล็อกอิน</p>
+            {authFailed && <p role="alert" className="card-tint-coral rounded-xl border p-3 text-sm text-coral-deep">ไม่สามารถเชื่อมต่อระบบได้ ตรวจสอบอินเทอร์เน็ตแล้วรีเฟรชหน้า</p>}
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#62F5C5]/30 bg-black/25 px-3 py-1 text-xs tracking-widest text-[#62F5C5]"><Sparkles size={14}/> MULTIPLAYER LEARNING ARENA</div>
-              <div className="mt-5 flex items-center gap-4"><div className="grid h-16 w-16 place-items-center rounded-2xl border border-[#D6B36A]/50 bg-[#D6B36A]/10 shadow-[0_0_35px_rgba(214,179,106,.18)]"><Gamepad2 size={34} className="text-[#D6B36A]"/></div><div><p className="text-xs uppercase tracking-[.3em] text-[#62F5C5]">Social-Science Arena</p><h1 className="text-4xl sm:text-6xl font-black leading-tight">Jigsaw <span className="text-[#D6B36A]">Puzzle</span></h1></div></div>
-              <p className="mt-5 max-w-xl text-base sm:text-lg leading-8 text-white/75">เปิดชิ้นส่วนภาพปริศนา สังเกตเบาะแส และตอบคำถามสังคมศาสตร์ให้ถูกต้องก่อนหมดเวลา แข่งขันสะสมคะแนนกับผู้เล่นในห้องเดียวกัน</p>
-              <div className="mt-6 flex flex-wrap gap-3"><button onClick={() => document.getElementById('join-room')?.scrollIntoView({behavior:'smooth'})} className="rounded-xl bg-[#62F5C5] px-5 py-3 font-bold text-[#0B1715] hover:brightness-110"><Users className="mr-2 inline" size={18}/>เข้าร่วมเกม</button>{currentUser?.isHost ? <button onClick={() => setView('host-setup')} className="rounded-xl border border-[#D6B36A]/50 bg-black/20 px-5 py-3 font-semibold hover:bg-white/10"><Plus className="mr-2 inline" size={18}/>สร้างห้อง</button> : <button onClick={() => setHostModal(true)} className="rounded-xl border border-[#D6B36A]/50 bg-black/20 px-5 py-3 font-semibold hover:bg-white/10"><ShieldCheck className="mr-2 inline" size={18}/>เข้าสู่ระบบ Host</button>}<button onClick={() => setHowToPlay(true)} className="rounded-xl border border-white/15 px-4 py-3 hover:bg-white/10"><CircleHelp className="mr-2 inline" size={18}/>วิธีเล่น</button></div>
+              <label htmlFor="room-code" className="sr-only">รหัสห้อง</label>
+              <input id="room-code" className="input text-center font-mono text-2xl uppercase tracking-[0.4em]" value={roomCode} maxLength={6} autoFocus autoComplete="off"
+                onChange={e => { setRoomCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '')); setCodeError(''); }} placeholder="ABC123" aria-invalid={!!codeError} aria-describedby={codeError ? 'code-error' : undefined} />
+              {codeError && <p id="code-error" role="alert" className="mt-2 text-sm font-semibold text-coral-deep">{codeError}</p>}
             </div>
-            <div className="space-y-4">
-              <video className="aspect-video w-full rounded-2xl border border-[#62F5C5]/25 object-cover shadow-xl" src="/assets/social-science-lobby.mp4" poster="/assets/Lobby.png" autoPlay muted loop playsInline controls aria-label="วิดีโอแนะนำเกม"/>
-              <div className="grid grid-cols-3 gap-3">{[['10','ภาพปริศนา'],['60s','ต่อข้อ'],['+คะแนน','คอมโบ']].map(([n,l])=><div key={l} className="rounded-xl border border-white/10 bg-black/25 p-3 text-center"><p className="text-xl font-black text-[#D6B36A]">{n}</p><p className="mt-1 text-xs text-white/60">{l}</p></div>)}</div>
+            <button type="submit" className="btn btn-primary btn-lg w-full" disabled={loading || roomCode.length < 6}>{loading ? <><Loader2 size={18} className="animate-spin" aria-hidden />กำลังตรวจสอบ…</> : 'เข้าห้อง'}</button>
+          </form>
+        </main>
+      );
+    }
+
+    if (view === 'host-setup') {
+      return <HostRoomSetup roomName={roomName} mode={setupMode} minPlayers={minPlayers} maxPlayers={maxPlayers} randomize={randomize} loading={loading}
+        minPiecesForHint={minPiecesForHint} questionSetName={setupQuestionSetName} questionCount={setupQuestions.length}
+        questionTimeSeconds={questionTimeSeconds}
+        timerEnabled={timerEnabled}
+        savedSets={savedQuestionSets} activeQuestionSetId={activeQuestionSetId} questionSetsLoading={questionSetsLoading} questionSetSaving={questionSetSaving}
+        onRoomNameChange={setRoomName} onModeChange={setSetupMode} onMinPlayersChange={setMinPlayers} onMaxPlayersChange={setMaxPlayers} onRandomizeChange={setRandomize}
+        onMinPiecesForHintChange={setMinPiecesForHint} onQuestionSetNameChange={setSetupQuestionSetName} onSelectQuestionSet={loadQuestionSet}
+        onQuestionTimeSecondsChange={setQuestionTimeSeconds}
+        onTimerEnabledChange={setTimerEnabled} published={setupPublished} canPublish={canPublishSetup} onPublishedChange={setSetupPublished}
+        onCreateNewSet={createNewQuestionSet} onSaveQuestionSet={() => void saveQuestionSet()} onEditQuestions={() => setSetupEditorOpen(true)}
+        onCreateRoom={() => void createRoom()} onCancel={() => setView('mode')} />;
+    }
+
+    if (view === 'host' && room) {
+      if (room.hostUid !== uid || !isHost) return <div className="card m-6 p-6 text-center">คุณไม่มีสิทธิ์ควบคุมห้องนี้</div>;
+      return <HostDashboard room={room} hostUid={uid} onStartGame={() => void startGame()} onPauseGame={() => void pauseGame()} onResumeGame={() => void resumeGame()} onEndGameEarly={() => void finishGame()} onOpenQuestionEditor={() => void openEditor()} onCloseRoom={() => void closeRoom()} onOpenHowToPlay={() => setHowToPlay(true)} />;
+    }
+
+    if (view === 'player-setup' && room) return <PlayerLobby room={room} currentUid={uid} onJoin={joinPlayer} />;
+
+    if (view === 'results' && room) {
+      return <PodiumLeaderboard room={room} results={results} isHost={isHost && room.hostUid === uid}
+        knowledgeQuestions={teamReviewQuestions} knowledgeError={teamReviewError}
+        onPlayAgain={() => { const m = mode; resetToMode(); if (m) selectMode(m); }} onBackToLobby={resetToMode} />;
+    }
+
+    if (view === 'game' && room && isTeam) return <TeamBoard room={room} uid={uid} isHost={isTeamController}
+      onFinish={finishTeamwork} onCloseRoom={closeRoom} onOpenHowToPlay={() => setHowToPlay(true)} />;
+
+    if (view === 'game' && room && question && player) {
+      const stats: [string, string][] = [[`ข้อ`, `${questionIndex}/${activeQuestions.length}`], ['คะแนน', String(player.score || 0)], ['คอมโบ', `${player.comboStreak || 0} 🔥`]];
+      return (
+        <main className="mx-auto max-w-7xl px-3 py-4 sm:px-6">
+          <div className={`card mb-4 p-3 ${urgent && canPlay ? 'card-tint-coral' : 'card-tint-mint'}`}>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex gap-2">{stats.map(([k, v]) => <div key={k} className="rounded-xl bg-paper px-3 py-1.5 text-center"><p className="text-[11px] text-ink-soft">{k}</p><p className="font-bold">{v}</p></div>)}</div>
+              <p className="text-2xl font-bold tabular-nums" role="timer" aria-label={room.settings.timerEnabled === false ? 'ไม่จำกัดเวลา' : `เวลาที่เหลือ ${timeLeft} วินาที`}>
+                ⏱ {room.settings.timerEnabled === false ? '--:--' : `${timeLeft}s`} {urgent && canPlay && <span className="text-sm font-semibold text-coral-deep">ใกล้หมดเวลา!</span>}
+              </p>
             </div>
+            {room.settings.timerEnabled !== false && <div className="mt-2 h-3 overflow-hidden rounded-full bg-paper" role="progressbar" aria-valuemin={0} aria-valuemax={room.settings.questionTimeSeconds} aria-valuenow={timeLeft} aria-label="เวลาที่เหลือ">
+              <div className={`h-full rounded-full transition-[width] duration-200 ${urgent ? 'bg-coral' : 'bg-mint-deep'}`} style={{ width: `${(timeLeft / room.settings.questionTimeSeconds) * 100}%` }} />
+            </div>}
           </div>
-        </section>
-        <section id="join-room" className="mx-auto mt-8 grid max-w-5xl gap-5 md:grid-cols-2">
-          <div className="glass-card rounded-2xl p-6"><h2 className="mb-2 text-xl font-bold"><LogIn className="mr-2 inline text-[#62F5C5]"/>เข้าร่วมด้วยรหัสห้อง</h2><p className="mb-4 text-sm text-white/60">เปิดลิงก์ QR หรือกรอกรหัสห้องที่ Host แชร์ให้</p><label className="mb-2 block text-sm">รหัสห้อง</label><div className="flex gap-2"><input value={roomCode} onChange={e=>setRoomCode(e.target.value.toUpperCase())} placeholder="เช่น A7K2Q9" className="min-w-0 flex-1 rounded-xl border border-white/15 bg-black/30 px-4 py-3 outline-none focus:border-[#62F5C5]" /><button disabled={loading} onClick={enterRoom} className="rounded-xl bg-[#103B32] px-4 font-bold text-[#62F5C5] disabled:opacity-50">{loading?'กำลังค้นหา…':'เข้าห้อง'}</button></div>{currentUser ? <p className="mt-4 rounded-xl border border-[#62F5C5]/20 bg-[#103B32]/30 px-4 py-3 text-sm text-[#62F5C5]">เข้าสู่ระบบแล้ว · {currentUser.displayName} · ออกจากระบบได้ที่แถบเมนูด้านบน</p> : <button onClick={async()=>{try{await loginGoogle();setNotice('เข้าสู่ระบบ Google สำเร็จ กรุณาเข้าห้องอีกครั้ง');}catch(e:any){setNotice(e?.message||'เข้าสู่ระบบ Google ไม่สำเร็จ')}}} className="mt-4 w-full rounded-xl border border-white/15 px-4 py-3 hover:bg-white/5">เข้าสู่ระบบด้วย Google</button>}</div>
-          <div className="glass-card rounded-2xl p-6"><h2 className="mb-2 text-xl font-bold"><Crown className="mr-2 inline text-[#D6B36A]"/>สำหรับ Host</h2><p className="mb-4 text-sm leading-6 text-white/60">กรอกรหัส Host แล้วตั้งค่าห้อง สร้างลิงก์และ QR Code จาก Host Dashboard</p>{currentUser?.isHost ? <button onClick={()=>setView('host-setup')} className="w-full rounded-xl bg-[#62F5C5] p-3 font-bold text-[#0B1715]"><Plus className="mr-2 inline" size={18}/>ตั้งค่าและสร้างห้อง</button> : <button onClick={()=>setHostModal(true)} className="w-full rounded-xl border border-[#D6B36A]/40 p-3 font-semibold text-[#D6B36A] hover:bg-[#D6B36A]/10">เข้าสู่ระบบ Host</button>}</div>
-        </section>
-        <p className="mt-8 text-center text-xs text-white/40">ระบบเชื่อมต่อ Firebase ต้องตั้งค่า Google และ Anonymous Authentication พร้อม Firestore Rules ก่อนใช้งาน</p>
-      </main>}
-      {view === 'host-setup' && currentUser?.isHost && <HostRoomSetup roomName={roomName} minPlayers={minPlayers} maxPlayers={maxPlayers} randomize={randomize} loading={loading} onRoomNameChange={setRoomName} onMinPlayersChange={value=>setMinPlayers(Math.max(1,Math.min(maxPlayers,value || 1)))} onMaxPlayersChange={value=>setMaxPlayers(Math.max(minPlayers,Math.min(40,value || minPlayers)))} onRandomizeChange={setRandomize} onCreateRoom={createRoom} onCancel={()=>setView('lobby')}/>}
-      {view === 'host' && room && <HostDashboard room={room} onStartGame={startGame} onPauseGame={pauseGame} onResumeGame={resumeGame} onEndGameEarly={finishGame} onOpenQuestionEditor={()=>setEditorOpen(true)} onCloseRoom={async()=>{const r=await gameService.updateRoom(room.roomId,{status:'cancelled',acceptingPlayers:false});if(r)setRoom(r);setView('lobby')}}/>}
-      {view === 'player-lobby' && room && <main className="px-4 py-8"><div className="mx-auto max-w-5xl"><div className="mb-5 rounded-2xl border border-[#62F5C5]/20 bg-[#103B32]/40 p-5"><p className="text-sm text-[#62F5C5]">ROOM CODE</p><h1 className="text-3xl font-black">{room.name}</h1><p className="mt-1 text-white/60">รหัสห้อง: {room.roomId} · ผู้เล่น {Object.keys(room.players||{}).length}/{room.settings.maxPlayers}</p><p className="mt-3 text-sm">{room.status==='running'?'เกมเริ่มแล้ว กดเล่นต่อเพื่อกลับสู่ข้อปัจจุบัน':'รอ Host เริ่มเกม — เลือกชื่อและอวตารก่อนเข้าร่วม'}</p></div>{currentUser ? <PlayerLobby room={room} currentUid={currentUser.uid} onJoinSuccess={joinPlayer} onGoogleSignIn={loginGoogle} currentUser={currentUser}/> : <button onClick={async()=>{try{await loginGoogle()}catch(e:any){setNotice(e?.message||'เข้าสู่ระบบไม่สำเร็จ')}}} className="rounded-xl bg-[#62F5C5] px-5 py-3 font-bold text-[#0B1715]">เข้าสู่ระบบ Google เพื่อเข้าร่วม</button>}</div></main>}
-      {view === 'game' && room && question && currentUser && <main className="mx-auto max-w-7xl px-3 py-5 sm:px-6"><div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-4">{[[`ข้อ ${questionIndex}/${room.questions.length}`,question.topic],['เวลา',`${timeLeft}s`],['คะแนน',String(player?.score||0)],['คอมโบ',`${player?.comboStreak||0} 🔥`]].map(([k,v])=><div key={k} className="rounded-xl border border-white/10 bg-white/5 p-3"><p className="text-xs text-white/50">{k}</p><p className="mt-1 font-bold">{v}</p></div>)}</div>{room.status==='paused'&&<div role="status" className="mb-4 rounded-xl border border-amber-300/30 bg-amber-900/30 px-4 py-3 text-center text-sm text-amber-100">โฮสต์พักเกมอยู่ — เวลาและการเล่นจะดำเนินต่อเมื่อโฮสต์กดเล่นต่อ</div>}<div className="grid items-start gap-6 lg:grid-cols-[1.55fr_.75fr]"><section className="rounded-2xl border border-[#62F5C5]/20 bg-[#103B32]/25 p-3 sm:p-5"><JigsawBoard3D imageSrc={`/assets/${question.imageFileName}`} revealedPieceIds={revealed} onRevealPiece={revealPiece} disabled={answered||timeLeft<=0||room.status!=='running'} questionNumber={questionIndex} totalQuestions={room.questions.length}/><p className="mt-3 text-center text-xs text-white/55">แตะชิ้นส่วนเพื่อเปิดภาพ · ชิ้นแรกฟรี · เปิดแล้วจะไม่ปิดกลับ</p></section><section className="glass-card rounded-2xl p-5"><p className="text-xs uppercase tracking-widest text-[#62F5C5]">QUESTION TOPIC</p><h1 className="mt-2 text-2xl font-bold">{question.topic}</h1><p className="mt-4 text-sm leading-6 text-white/65">เปิดชิ้นส่วนเพื่อสังเกตภาพ จากนั้นกรอกคำตอบที่ตรงกับเฉลยที่กำหนดไว้</p><form onSubmit={submitAnswer} className="mt-5 space-y-3"><label htmlFor="answer" className="block text-sm font-semibold">คำตอบของคุณ</label><input id="answer" value={answer} onChange={e=>setAnswer(e.target.value)} disabled={answered||timeLeft<=0||room.status!=='running'} placeholder="พิมพ์คำตอบ…" className="w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 outline-none focus:border-[#62F5C5] disabled:opacity-50"/><button disabled={answered||timeLeft<=0||room.status!=='running'||!answer.trim()} className="w-full rounded-xl bg-[#62F5C5] px-4 py-3 font-bold text-[#0B1715] disabled:opacity-40">ส่งคำตอบ</button></form><button onClick={openHint} disabled={room.status!=='running'||revealed.length<(room.settings.minPiecesForHint||5)||!!progress?.hintUsed||answered} className="mt-3 w-full rounded-xl border border-[#D6B36A]/40 px-4 py-3 text-[#D6B36A] disabled:opacity-35"><Sparkles className="mr-2 inline" size={16}/>ขอคำใบ้ ({revealed.length}/{room.settings.minPiecesForHint})</button>{showHint&&<div className="mt-3 rounded-xl border border-[#D6B36A]/30 bg-[#D6B36A]/10 p-3 text-sm leading-6">{question.hint}</div>}{notice&&<p role="status" className="mt-3 text-sm text-[#62F5C5]">{notice}</p>}<div className="mt-5 flex items-center justify-between border-t border-white/10 pt-4 text-xs text-white/50"><span>{revealed.length}/10 ชิ้นเปิดแล้ว</span><span>{room.status==='paused'?'พักเกม':answered?'ตอบถูกแล้ว':timeLeft===0?'หมดเวลา':'กำลังเล่น'}</span></div></section></div></main>}
-      {view === 'results' && room && <PodiumLeaderboard room={room} results={results} onBackToLobby={()=>{setRoom(null);setView('lobby')}} isHost={isHostOfRoom}/>}
-      {showKnowledge && question && <KnowledgeModal question={question} progress={progress} onNextQuestion={()=>void nextQuestion()} isLastQuestion={questionIndex>= (room?.questions.length||10)} timeRemaining={timeLeft} disabled={room?.status!=='running'}/>}
-      {showKnowledgeArchive && room && <KnowledgeArchiveModal questions={room.questions} onClose={()=>setShowKnowledgeArchive(false)}/>}
-      <HostAuthModal isOpen={hostModal} onClose={()=>setHostModal(false)} onSuccess={u=>{setCurrentUser(u);setHostModal(false);setNotice('');setSuccessMessage('เข้าสู่ระบบ Host สำเร็จ ✓ คุณสามารถสร้างห้องได้ทันที')}}/>
-      <HowToPlayModal isOpen={howToPlay} onClose={()=>setHowToPlay(false)}/>
-      <QuestionEditorModal isOpen={editorOpen} onClose={()=>setEditorOpen(false)} questions={room?.questions || questions} onSaveQuestions={saveQuestions} randomizeOrder={randomize || !!room?.settings.randomizeQuestionOrder}/>
+          {room.status === 'paused' && <div role="status" className="card card-tint-butter mb-4 px-4 py-3 text-center text-sm font-semibold text-butter-deep">โฮสต์พักเกมอยู่ — เวลาจะเดินต่อเมื่อโฮสต์กดเล่นต่อ</div>}
+
+          <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_21rem]">
+            <JigsawBoard imageFileName={question.imageFileName} pieceCount={pieceCount} revealedPieceIds={revealed} onRevealPiece={id => void revealPiece(id)} disabled={!canPlay} label={`ข้อ ${questionIndex}`}
+              footer={<p className="text-center text-xs text-ink-soft">แตะชิ้นส่วนเพื่อเปิดภาพ · ชิ้นแรกฟรี · เปิดแล้วจะไม่ปิดกลับ</p>} />
+            <section className="card p-5">
+              <p className="text-xs font-bold uppercase tracking-widest text-mint-deep">หัวข้อ</p>
+              <h1 className="mt-1 text-2xl font-bold">{question.topic}</h1>
+              <form onSubmit={e => void submitAnswer(e)} className="mt-4 space-y-3">
+                <label htmlFor="answer" className="block text-sm font-bold">คำตอบของคุณ</label>
+                <input id="answer" className="input" value={answer} onChange={e => setAnswer(e.target.value)} disabled={!canPlay} placeholder="พิมพ์คำตอบ…" autoComplete="off" />
+                <button className="btn btn-primary w-full" disabled={!canPlay || !answer.trim()}>ส่งคำตอบ</button>
+              </form>
+              <button type="button" onClick={randomReveal} disabled={!canPlay || revealed.length >= pieceCount} className="btn btn-sky mt-3 w-full"><Shuffle size={16} aria-hidden />สุ่มเปิดจิ๊กซอว์</button>
+              <button type="button" onClick={() => void openHint()} disabled={!canPlay || revealed.length < hintThreshold || !!progress?.hintUsed || !question.hint} className="btn btn-butter mt-3 w-full">
+                <Sparkles size={16} aria-hidden />ขอคำใบ้ ({Math.min(revealed.length, hintThreshold)}/{hintThreshold})
+              </button>
+              {(showHint || progress?.hintUsed) && question.hint && <div role="status" className="card card-tint-butter mt-3 p-3 text-sm leading-6">{question.hint}</div>}
+              <p className="mt-4 border-t border-line pt-3 text-xs text-ink-soft">{revealed.length}/{pieceCount} ชิ้นเปิดแล้ว · {room.status === 'paused' ? 'พักเกม' : answered ? 'ตอบถูกแล้ว' : timeLeft === 0 ? 'หมดเวลา' : 'กำลังเล่น'}</p>
+            </section>
+          </div>
+
+          {showKnowledge && <KnowledgeModal question={question} progress={progress} timeRemaining={timeLeft} pieceCount={pieceCount} isLastQuestion={questionIndex >= activeQuestions.length} disabled={room.status !== 'running'} onNextQuestion={() => void nextQuestion(false)} />}
+        </main>
+      );
+    }
+
+    return <div className="card m-6 p-8 text-center"><p className="font-semibold">ไม่พบข้อมูลห้อง</p><button type="button" className="btn btn-primary mt-3" onClick={resetToMode}>กลับหน้าแรก</button></div>;
+  })();
+
+  const inRoom = view !== 'mode' && view !== 'code' && view !== 'host-setup';
+
+  return (
+    <div className="app-bg min-h-screen text-ink">
+      <Navbar
+        mode={mode ?? room?.mode ?? null}
+        modeLabel={view === 'practice-game' ? 'Solo Practice' : undefined}
+        userLabel={isHost ? 'ผู้ควบคุม' : player?.displayName}
+        isHost={isHost}
+        onOpenHowToPlay={() => setHowToPlay(true)}
+        onLogout={inRoom ? () => void leave() : undefined}
+        onNavigateHome={() => (view === 'game' || view === 'host' ? undefined : resetToMode())}
+        onHostGesture={hostGesture}
+      />
+      <ToastHost />
+      {!online && <div role="status" className="bg-butter px-4 py-2 text-center text-sm font-semibold text-butter-deep"><WifiOff className="mr-2 inline h-4 w-4" aria-hidden />การเชื่อมต่อขาดหาย — ความคืบหน้าออนไลน์อาจยังไม่ซิงก์</div>}
+      {body}
+      <HostAuthModal
+        isOpen={hostModal}
+        onClose={() => { setHostModal(false); if (!isHost && view === 'mode') setMode(null); }}
+        onSuccess={hostUser => {
+          setUser(hostUser);
+          setAuthReady(true);
+          setMode(null);
+          setView('host-setup');
+          toast('ยืนยันรหัสโฮสต์แล้ว ตั้งค่าห้องเพื่อเริ่มเกมได้เลย', 'success');
+        }}
+      />
+      <HowToPlayModal isOpen={howToPlay} onClose={() => setHowToPlay(false)} />
+      {modeFlow && <ModeFlowModal flow={modeFlow} sets={publishedQuestionSets} loading={publicSetsLoading || loading}
+        error={publicSetsError} onClose={() => { setModeFlow(null); setMode(null); }}
+        onBack={() => {
+          if (modeFlow === 'practice-sets') setModeFlow('choice');
+          else { setModeFlow(null); setMode(null); }
+        }}
+        onChoosePractice={() => void openPublishedSets('practice-sets')}
+        onChooseBattle={chooseBattle} onSelectSet={set => void startPublishedSet(set)} />}
+      {setupEditorOpen && (
+        <QuestionEditorModal isOpen onClose={() => setSetupEditorOpen(false)} questions={setupQuestions} mode={setupMode} ownerUid={uid}
+          randomizeOrder={randomize} onSaveQuestions={async (updated, shuffle) => { setSetupQuestions(updated); setRandomize(shuffle); }} />
+      )}
+      {editorQuestions && room && (
+        <QuestionEditorModal isOpen onClose={() => setEditorQuestions(null)} questions={editorQuestions} mode={room.mode || 'solo'} ownerUid={uid}
+          randomizeOrder={!!room.settings.randomizeQuestionOrder} onSaveQuestions={saveQuestions} />
+      )}
     </div>
-  </div>;
+  );
 }

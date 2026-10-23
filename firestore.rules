@@ -2,99 +2,148 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
-    function isGoogleUser() {
+
+    // Host = the Email/Password account created in the Firebase Console.
+    // If you change VITE_HOST_EMAIL, change the address below to match.
+    function isHostAccount() {
       return signedIn()
-        && request.auth.token.firebase.sign_in_provider == 'google.com'
-        && request.auth.token.email_verified == true;
+        && request.auth.token.firebase.sign_in_provider == 'password'
+        && request.auth.token.email == 'host@social-science-arena.app';
     }
-    function isHostIdentity() {
-      return signedIn()
-        && request.auth.token.firebase.sign_in_provider == 'anonymous';
+    function roomPath(roomId) { return /databases/$(database)/documents/rooms/$(roomId); }
+    function questionSetPath(setId) { return /databases/$(database)/documents/questionSets/$(setId); }
+    function isPublishedSet(setId) {
+      return signedIn() && setId is string && exists(questionSetPath(setId))
+        && get(questionSetPath(setId)).data.published == true;
     }
-    function roomExists(roomId) { return exists(/databases/$(database)/documents/rooms/$(roomId)); }
     function isRoomHost(roomId) {
-      return isHostIdentity() && roomExists(roomId)
-        && get(/databases/$(database)/documents/rooms/$(roomId)).data.hostUid == request.auth.uid;
+      return isHostAccount() && exists(roomPath(roomId))
+        && get(roomPath(roomId)).data.hostUid == request.auth.uid;
     }
-    function isRoomPlayer(roomId) {
-      return isGoogleUser() && roomExists(roomId)
-        && get(/databases/$(database)/documents/rooms/$(roomId)).data.players.keys().hasAny([request.auth.uid]);
+    function isTeamController(roomId) {
+      return signedIn() && exists(roomPath(roomId))
+        && get(roomPath(roomId)).data.mode == 'team'
+        && get(roomPath(roomId)).data.controllerUid == request.auth.uid;
     }
-    function canReadRoom(roomId) { return isRoomHost(roomId) || isRoomPlayer(roomId); }
-    function hasValidRoomIdentity(roomId) {
-      return request.resource.data.roomId == roomId
-        && request.resource.data.hostUid == request.auth.uid
-        && request.resource.data.hostUid == resource.data.hostUid;
+    function isTeamControllerAfter(roomId) {
+      return signedIn() && getAfter(roomPath(roomId)).data.mode == 'team'
+        && getAfter(roomPath(roomId)).data.controllerUid == request.auth.uid;
     }
 
-    match /users/{uid} {
-      allow get: if signedIn() && request.auth.uid == uid;
-      allow list: if false;
-      allow create: if signedIn() && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['displayName','photoURL','email','createdAt','lastSeenAt'])
-        && request.resource.data.keys().hasAll(['displayName','createdAt']);
-      allow update: if signedIn() && request.auth.uid == uid
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName','photoURL','lastSeenAt']);
-      allow delete: if false;
-    }
-    match /usernames/{username} { allow read, write: if false; }
     match /rooms/{roomId} {
-      allow get: if isGoogleUser() || canReadRoom(roomId);
+      // Rooms are only readable by id (6-char code); listing is denied.
+      allow get: if signedIn();
       allow list: if false;
-      allow create: if isHostIdentity()
-        && request.resource.data.keys().hasOnly([
-          'roomId', 'name', 'description', 'hostUid', 'hostEmail', 'status',
-          'createdAt', 'startedAt', 'finishedAt', 'pausedAt',
-          'totalPausedMilliseconds', 'settings', 'questionSetVersion',
-          'questions', 'currentRoundQuestion', 'acceptingPlayers', 'players'
-        ])
-        && request.resource.data.keys().hasAll([
-          'roomId', 'name', 'hostUid', 'status', 'createdAt', 'settings',
-          'questionSetVersion', 'questions', 'currentRoundQuestion',
-          'acceptingPlayers', 'players'
-        ])
+
+      allow create: if isHostAccount()
         && request.resource.data.roomId == roomId
-        && request.resource.data.hostUid == request.auth.uid;
-      allow update: if (isRoomHost(roomId)
-          && hasValidRoomIdentity(roomId)
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'name', 'description', 'hostEmail', 'status', 'startedAt',
-            'finishedAt', 'pausedAt', 'totalPausedMilliseconds', 'settings',
-            'questionSetVersion', 'questions', 'currentRoundQuestion',
-            'acceptingPlayers', 'players'
-          ]))
-        || (isGoogleUser()
+        && request.resource.data.hostUid == request.auth.uid
+        ||
+        (signedIn()
+          && request.resource.data.roomId == roomId
+          && request.resource.data.keys().hasOnly([
+            'roomId', 'name', 'description', 'hostUid', 'controllerUid', 'publishedSetId',
+            'mode', 'status', 'createdAt', 'startedAt', 'settings', 'questionSetVersion',
+            'questions', 'currentRoundQuestion', 'acceptingPlayers', 'players', 'team'
+          ])
+          && request.resource.data.hostUid == request.auth.uid
+          && request.resource.data.controllerUid == request.auth.uid
+          && request.resource.data.mode == 'team'
+          && request.resource.data.status == 'running'
+          && request.resource.data.name is string
+          && request.resource.data.name.size() <= 60
+          && request.resource.data.acceptingPlayers == false
+          && request.resource.data.players.size() == 0
+          && request.resource.data.settings.maxPlayers == 1
+          && request.resource.data.questions.size() <= 100
+          && isPublishedSet(request.resource.data.publishedSetId)
+          && request.resource.data.questions is list
+          && request.resource.data.questions.size()
+            == get(questionSetPath(request.resource.data.publishedSetId)).data.questions.size());
+
+      allow update: if
+        // Room host: may change anything except identity fields.
+        (isRoomHost(roomId)
+          && request.resource.data.hostUid == resource.data.hostUid
+          && request.resource.data.roomId == resource.data.roomId)
+        ||
+        // A controller created by the trusted callable may only change team gameplay state.
+        (isTeamController(roomId)
+          && request.resource.data.hostUid == resource.data.hostUid
+          && request.resource.data.roomId == resource.data.roomId
+          && request.resource.data.controllerUid == resource.data.controllerUid
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['team', 'status', 'finishedAt', 'acceptingPlayers'])
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['status'])
+            || request.resource.data.status in ['running', 'paused', 'finished', 'cancelled'])
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['acceptingPlayers'])
+            || request.resource.data.acceptingPlayers == false))
+        ||
+        // Players: may only touch their own entry in `players`.
+        (signedIn()
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['players'])
           && request.resource.data.players.diff(resource.data.players).affectedKeys().hasOnly([request.auth.uid])
           && (resource.data.players.keys().hasAny([request.auth.uid])
             || (resource.data.status == 'waiting'
-              && resource.data.acceptingPlayers == true
-              && request.resource.data.acceptingPlayers == true
-              && resource.data.players.size() < resource.data.settings.maxPlayers)));
+              || (resource.data.mode == 'team'
+                && (resource.data.status == 'running' || resource.data.status == 'paused'))
+            )
+            && resource.data.acceptingPlayers == true
+            && resource.data.players.size() < resource.data.settings.maxPlayers));
+
       allow delete: if false;
-      match /players/{uid} {
-        allow get, list: if canReadRoom(roomId);
-        allow create, update, delete: if false;
-        match /progress/{questionId} {
-          allow get, list: if canReadRoom(roomId) && (request.auth.uid == uid || isRoomHost(roomId));
-          allow create, update, delete: if false;
-        }
-      }
-      match /results/{uid} {
-        allow get: if canReadRoom(roomId) && (request.auth.uid == uid || isRoomHost(roomId)
-          || (resource.data.visibility == 'public'
-            && get(/databases/$(database)/documents/rooms/$(roomId)).data.status == 'finished'));
-        allow list: if canReadRoom(roomId)
-          && get(/databases/$(database)/documents/rooms/$(roomId)).data.status == 'finished';
-        allow create, update, delete: if false;
+
+      // Full answer key for team rooms: host only.
+      match /private/{docId} {
+        allow read: if isRoomHost(roomId) || isTeamController(roomId);
+        allow write: if isRoomHost(roomId)
+          || (docId == 'questions'
+            && isTeamControllerAfter(roomId)
+            && isPublishedSet(getAfter(roomPath(roomId)).data.publishedSetId)
+            && request.resource.data.keys().hasOnly(['questions', 'updatedAt'])
+            && request.resource.data.questions
+              == get(questionSetPath(getAfter(roomPath(roomId)).data.publishedSetId)).data.questions);
       }
       match /auditLogs/{logId} {
-        allow get, list: if isRoomHost(roomId);
-        allow create, update, delete: if false;
+        allow get, list, create: if isRoomHost(roomId);
+        allow update, delete: if false;
       }
     }
-    match /questionSets/{setId} { allow get, list: if signedIn(); allow create, update, delete: if false; }
-    match /privateQuestionSets/{setId} { allow read, write: if false; }
+
+    match /questionSets/{setId} {
+      allow get, list: if signedIn()
+        && (resource.data.published == true
+          || (isHostAccount() && resource.data.ownerUid == request.auth.uid));
+      allow create: if isHostAccount()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+          'ownerUid', 'name', 'mode', 'questions', 'randomizeOrder', 'minPlayers', 'maxPlayers',
+          'minPiecesForHint', 'questionTimeSeconds', 'timerEnabled', 'published', 'createdAt', 'updatedAt'
+        ]);
+      allow update: if isHostAccount()
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+          'ownerUid', 'name', 'mode', 'questions', 'randomizeOrder', 'minPlayers', 'maxPlayers',
+          'minPiecesForHint', 'questionTimeSeconds', 'timerEnabled', 'published', 'createdAt', 'updatedAt'
+        ]);
+      allow delete: if isHostAccount() && resource.data.ownerUid == request.auth.uid;
+    }
+
+    // Question images (compressed data URLs). Anyone signed in can display them; only the host writes.
+    match /questionImages/{imageId} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if isHostAccount()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.dataUrl is string
+        && request.resource.data.dataUrl.size() < 900000;
+      allow update: if isHostAccount() && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.dataUrl.size() < 900000;
+      allow delete: if isHostAccount() && resource.data.ownerUid == request.auth.uid;
+    }
+
     match /{document=**} { allow read, write: if false; }
   }
 }

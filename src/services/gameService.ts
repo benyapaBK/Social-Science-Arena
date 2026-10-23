@@ -1,14 +1,19 @@
-import { 
-  Room, 
+import {
+  Room,
+  TeamSolved,
   RoomPlayer, 
   Question, 
   RoomSettings, 
   PlayerProgress, 
   FinalPlayerResult, 
-  AuditLog 
+  AuditLog,
+  GameMode,
+  TeamState,
+  GameQuestionSet,
+  PublishedGameSetSummary
 } from '../types';
 import { DEFAULT_QUESTIONS } from '../data/defaultQuestions';
-import { db } from '../firebase';
+import { auth, db } from '../firebase';
 import { 
   doc, 
   setDoc, 
@@ -18,7 +23,11 @@ import {
   onSnapshot, 
   serverTimestamp,
   deleteDoc,
-  getDocs
+  deleteField,
+  getDocs,
+  query,
+  where,
+  runTransaction
 } from 'firebase/firestore';
 
 // Default settings as specified in Master Prompt
@@ -26,6 +35,7 @@ export const DEFAULT_ROOM_SETTINGS: RoomSettings = {
   minPlayers: 1,
   maxPlayers: 20,
   questionTimeSeconds: 60,
+  timerEnabled: true,
   totalTimeSeconds: 600,
   baseScoreFirstPiece: 100,
   penaltyPerPiece: 10,
@@ -157,7 +167,9 @@ class GameService {
     description?: string;
     customSettings?: Partial<RoomSettings>;
     customQuestions?: Question[];
+    mode?: GameMode;
   }): Promise<Room> {
+    const mode: GameMode = params.mode || 'solo';
     const roomId = this.generateRoomId();
     const settings: RoomSettings = {
       ...DEFAULT_ROOM_SETTINGS,
@@ -168,18 +180,25 @@ class GameService {
       ? [...params.customQuestions] 
       : [...DEFAULT_QUESTIONS];
 
-    if (settings.randomizeQuestionOrder) {
+    if (mode === 'solo' && settings.randomizeQuestionOrder) {
       questions = this.shuffleArray([...questions]);
     }
 
+    const fullQuestions = questions;
+    if (mode === 'team') questions = this.redactQuestions(questions);
+
+    const createdAt = Date.now();
+    const startsTeamImmediately = mode === 'team';
     const newRoom: Room = {
+      mode,
+      ...(mode === 'team' ? { team: this.initialTeamState(createdAt, settings.questionTimeSeconds, settings.timerEnabled !== false) } : {}),
       roomId,
       name: params.name || `Social-Science Arena #${roomId}`,
       description: params.description || '',
       hostUid: params.hostUid,
       ...(params.hostEmail ? { hostEmail: params.hostEmail } : {}),
       status: 'waiting',
-      createdAt: Date.now(),
+      createdAt,
       settings,
       questionSetVersion: 1,
       questions,
@@ -190,12 +209,25 @@ class GameService {
 
     const roomRef = doc(db, 'rooms', roomId);
     await setDoc(roomRef, newRoom);
+    if (mode === 'team') {
+      await setDoc(doc(db, 'rooms', roomId, 'private', 'questions'), { questions: fullQuestions, updatedAt: Date.now() });
+      const teamStartedAt = Date.now();
+      await updateDoc(roomRef, {
+        status: 'running',
+        startedAt: teamStartedAt,
+        'team.currentQuestionStartedAt': settings.timerEnabled === false ? deleteField() : teamStartedAt,
+        'team.remainingTimeSeconds': settings.questionTimeSeconds
+      });
+      newRoom.startedAt = teamStartedAt;
+      if (settings.timerEnabled !== false && newRoom.team) newRoom.team.currentQuestionStartedAt = teamStartedAt;
+    }
+    const createdRoom = startsTeamImmediately ? { ...newRoom, status: 'running' as const } : newRoom;
 
     // Local / Broadcast sync backup
-    this.saveLocalRoom(newRoom);
-    this.broadcastUpdate('ROOM_UPDATED', newRoom);
+    this.saveLocalRoom(createdRoom);
+    this.broadcastUpdate('ROOM_UPDATED', createdRoom);
 
-    return newRoom;
+    return createdRoom;
   }
 
   public subscribeToRoom(roomId: string, onUpdate: (room: Room | null) => void): () => void {
@@ -257,21 +289,276 @@ class GameService {
     return this.getLocalRoom(roomId);
   }
 
-  public async updateRoom(roomId: string, updates: Partial<Room>): Promise<Room | null> {
-    const current = await this.getRoom(roomId);
-    if (!current) return null;
+  public async updateRoom(roomId: string, updates: Partial<Room> | Record<string, unknown>): Promise<void> {
+    // Dotted field paths are allowed (e.g. "players.<uid>"), so no read-modify-write of whole maps.
+    await updateDoc(doc(db, 'rooms', roomId), updates as Record<string, unknown>);
+  }
 
-    const updated: Room = {
-      ...current,
-      ...updates
+  public redactQuestions(questions: Question[]): Question[] {
+    return questions.map(q => ({
+      ...q,
+      hint: '',
+      acceptedAnswers: [],
+      knowledge: '',
+      ...(q.extraQuestionEnabled ? { extraAcceptedAnswers: [] } : {})
+    }));
+  }
+
+  public initialTeamState(startedAt = Date.now(), remainingTimeSeconds = DEFAULT_ROOM_SETTINGS.questionTimeSeconds, timerEnabled = true): TeamState {
+    return {
+      currentIndex: 0, revealed: {}, solved: {}, hintVisible: false, hintText: '',
+      ...(timerEnabled ? { currentQuestionStartedAt: startedAt } : {}),
+      remainingTimeSeconds, updatedAt: startedAt
+    };
+  }
+
+  public async getPrivateQuestions(roomId: string): Promise<Question[] | null> {
+    const snap = await getDoc(doc(db, 'rooms', roomId, 'private', 'questions'));
+    return snap.exists() ? ((snap.data().questions || []) as Question[]) : null;
+  }
+
+  // Host: replace the question set. Team rooms keep answers in the host-only private doc.
+  public async saveQuestions(room: Room, questions: Question[]): Promise<void> {
+    const stamped = questions.map(q => ({ ...q, updatedAt: q.updatedAt || Date.now() }));
+    if (room.mode === 'team') {
+      await setDoc(doc(db, 'rooms', room.roomId, 'private', 'questions'), { questions: stamped, updatedAt: Date.now() });
+      await this.updateRoom(room.roomId, { questions: this.redactQuestions(stamped), questionSetVersion: (room.questionSetVersion || 1) + 1 });
+    } else {
+      await this.updateRoom(room.roomId, { questions: stamped, questionSetVersion: (room.questionSetVersion || 1) + 1 });
+    }
+  }
+
+  public async getQuestionSets(ownerUid: string): Promise<GameQuestionSet[]> {
+    const sets = await getDocs(query(
+      collection(db, 'questionSets'),
+      where('ownerUid', '==', ownerUid)
+    ));
+    return sets.docs
+      .map(snapshot => ({ id: snapshot.id, ...snapshot.data() }) as GameQuestionSet)
+      .sort((a, b) => b.updatedAt - a.updatedAt);
+  }
+
+  public async getPublishedQuestionSets(): Promise<PublishedGameSetSummary[]> {
+    const snapshots = await getDocs(query(
+      collection(db, 'questionSets'),
+      where('published', '==', true)
+    ));
+    return snapshots.docs
+      .map(snapshot => ({ id: snapshot.id, ...snapshot.data() }) as GameQuestionSet)
+      .filter(set => this.isPlayableQuestionSet(set))
+      .map(set => {
+        const questions = set.questions.filter(question => question.enabled !== false);
+        const pieceCounts = questions.map(question => Math.min(60, Math.max(2, question.pieceCount ?? 9)));
+        return {
+          id: set.id,
+          name: set.name || 'ชุดเกม',
+          questionCount: questions.length,
+          minPieceCount: Math.min(...pieceCounts),
+          maxPieceCount: Math.max(...pieceCounts),
+          questionTimeSeconds: Number.isInteger(set.questionTimeSeconds)
+            ? Math.min(600, Math.max(5, set.questionTimeSeconds))
+            : 60,
+          timerEnabled: set.timerEnabled !== false,
+          updatedAt: set.updatedAt || 0
+        };
+      })
+      .sort((a, b) => b.updatedAt - a.updatedAt);
+  }
+
+  public async getPublishedQuestionSet(setId: string): Promise<GameQuestionSet> {
+    const snapshot = await getDoc(doc(db, 'questionSets', setId));
+    if (!snapshot.exists() || snapshot.get('published') !== true) {
+      throw new Error('This game set is unavailable or has been unpublished.');
+    }
+    const set = { id: snapshot.id, ...snapshot.data() } as GameQuestionSet;
+    if (!this.isPlayableQuestionSet(set)) {
+      throw new Error('This published game set is incomplete.');
+    }
+    return {
+      ...set,
+      questionTimeSeconds: Number.isInteger(set.questionTimeSeconds)
+        ? Math.min(600, Math.max(5, set.questionTimeSeconds))
+        : 60,
+      minPiecesForHint: Number.isInteger(set.minPiecesForHint)
+        ? Math.min(60, Math.max(0, set.minPiecesForHint))
+        : 5,
+      timerEnabled: set.timerEnabled !== false,
+      randomizeOrder: set.randomizeOrder === true
+    };
+  }
+
+  public async createTeamRoomFromPublishedSet(setId: string, name = 'Social Science Challenge'): Promise<Room> {
+    const gameSet = await this.getPublishedQuestionSet(setId);
+    const currentUser = auth.currentUser;
+    if (!currentUser) throw new Error('Sign in before creating a Teamwork room.');
+
+    const sourceQuestions = gameSet.questions;
+    const roomQuestions = gameSet.randomizeOrder ? this.shuffleArray([...sourceQuestions]) : [...sourceQuestions];
+    const now = Date.now();
+    const questionTimeSeconds = Number.isInteger(gameSet.questionTimeSeconds)
+      ? Math.min(600, Math.max(5, gameSet.questionTimeSeconds))
+      : 60;
+    const timerEnabled = gameSet.timerEnabled !== false;
+    const minPiecesForHint = Number.isInteger(gameSet.minPiecesForHint)
+      ? Math.min(60, Math.max(0, gameSet.minPiecesForHint))
+      : 5;
+    const roomId = this.generateRoomId();
+    const room: Room = {
+      roomId,
+      name: name.trim().slice(0, 60) || 'Social Science Challenge',
+      description: '',
+      hostUid: currentUser.uid,
+      controllerUid: currentUser.uid,
+      publishedSetId: setId,
+      mode: 'team',
+      status: 'running',
+      createdAt: now,
+      startedAt: now,
+      settings: {
+        minPlayers: 1,
+        maxPlayers: 1,
+        questionTimeSeconds,
+        timerEnabled,
+        totalTimeSeconds: 600,
+        baseScoreFirstPiece: 100,
+        penaltyPerPiece: 10,
+        correctBonus: 20,
+        speedBonus: 15,
+        speedBonusThreshold: 30,
+        minPiecesForHint,
+        hintPenalty: 0,
+        comboBonusEnabled: false,
+        allowRetryOnWrong: true,
+        showKnowledgeModal: true,
+        randomizeQuestionOrder: gameSet.randomizeOrder === true,
+        revealFullImageOnTimeout: true
+      },
+      questionSetVersion: 1,
+      questions: this.redactQuestions(roomQuestions),
+      currentRoundQuestion: 1,
+      acceptingPlayers: false,
+      players: {},
+      team: this.initialTeamState(now, questionTimeSeconds, timerEnabled)
     };
 
     const roomRef = doc(db, 'rooms', roomId);
-    await updateDoc(roomRef, updates);
+    await runTransaction(db, async transaction => {
+      const existingRoom = await transaction.get(roomRef);
+      if (existingRoom.exists()) throw new Error('Room ID collision; retry the action.');
+      transaction.set(roomRef, room);
+      transaction.set(doc(db, 'rooms', roomId, 'private', 'questions'), {
+        questions: sourceQuestions,
+        updatedAt: now
+      });
+    });
+    this.saveLocalRoom(room);
+    this.broadcastUpdate('ROOM_UPDATED', room);
+    return room;
+  }
 
-    this.saveLocalRoom(updated);
-    this.broadcastUpdate('ROOM_UPDATED', updated);
-    return updated;
+  private isPlayableQuestionSet(set: GameQuestionSet): boolean {
+    const activeQuestions = Array.isArray(set.questions)
+      ? set.questions.filter(question => question?.enabled !== false)
+      : [];
+    return activeQuestions.length > 0 && activeQuestions.every(question =>
+      typeof question.topic === 'string'
+      && question.topic.trim().length > 0
+      && typeof question.imageFileName === 'string'
+      && question.imageFileName.trim().length > 0
+      && Array.isArray(question.acceptedAnswers)
+      && question.acceptedAnswers.some(answer => typeof answer === 'string' && answer.trim().length > 0)
+    );
+  }
+
+  public async saveQuestionSet(input: Omit<GameQuestionSet, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): Promise<GameQuestionSet> {
+    const id = input.id || doc(collection(db, 'questionSets')).id;
+    const ref = doc(db, 'questionSets', id);
+    const previous = input.id ? await getDoc(ref) : null;
+    const timestamp = Date.now();
+    const saved: GameQuestionSet = {
+      ...input,
+      id,
+      name: input.name.trim(),
+      questions: input.questions.map(q => ({ ...q, updatedAt: q.updatedAt || timestamp })),
+      createdAt: previous?.exists() ? ((previous.data().createdAt as number | undefined) ?? timestamp) : timestamp,
+      updatedAt: timestamp
+    };
+    const { id: _id, ...document } = saved;
+    await setDoc(ref, document);
+    return saved;
+  }
+
+  // --- Teamwork (host-only writes; each call touches a single field path) ---
+
+  public async teamSetIndex(roomId: string, index: number, timerEnabled: boolean, questionTimeSeconds: number): Promise<void> {
+    const now = Date.now();
+    await this.updateRoom(roomId, {
+      'team.currentIndex': index,
+      'team.hintVisible': false,
+      'team.hintText': '',
+      'team.remainingTimeSeconds': questionTimeSeconds,
+      'team.currentQuestionStartedAt': timerEnabled ? now : deleteField(),
+      'team.updatedAt': now
+    });
+  }
+
+  public async teamSetRevealed(roomId: string, questionId: number, pieceIds: number[]): Promise<void> {
+    await this.updateRoom(roomId, { [`team.revealed.${questionId}`]: pieceIds, 'team.updatedAt': Date.now() });
+  }
+
+  public async teamSetHint(roomId: string, visible: boolean, text: string): Promise<void> {
+    await this.updateRoom(roomId, { 'team.hintVisible': visible, 'team.hintText': visible ? text : '', 'team.updatedAt': Date.now() });
+  }
+
+  public async teamMarkSolved(roomId: string, questionId: number, solved: TeamSolved): Promise<void> {
+    const clean = Object.fromEntries(Object.entries(solved).filter(([, v]) => v !== undefined));
+    await this.updateRoom(roomId, { [`team.solved.${questionId}`]: clean, 'team.updatedAt': Date.now() });
+  }
+
+  public async teamResetQuestion(roomId: string, questionId: number, timerEnabled: boolean, questionTimeSeconds: number, running: boolean): Promise<void> {
+    const now = Date.now();
+    await this.updateRoom(roomId, {
+      [`team.revealed.${questionId}`]: deleteField(),
+      [`team.solved.${questionId}`]: deleteField(),
+      [`team.resetAt.${questionId}`]: now,
+      'team.hintVisible': false,
+      'team.hintText': '',
+      'team.remainingTimeSeconds': questionTimeSeconds,
+      'team.currentQuestionStartedAt': timerEnabled && running ? now : deleteField(),
+      'team.updatedAt': now
+    });
+  }
+
+  public async teamPause(roomId: string, remainingTimeSeconds: number): Promise<void> {
+    await this.updateRoom(roomId, {
+      status: 'paused',
+      'team.remainingTimeSeconds': remainingTimeSeconds,
+      'team.currentQuestionStartedAt': deleteField(),
+      'team.updatedAt': Date.now()
+    });
+  }
+
+  public async teamStartTimer(roomId: string, remainingTimeSeconds: number): Promise<void> {
+    const now = Date.now();
+    await this.updateRoom(roomId, {
+      'team.currentQuestionStartedAt': now,
+      'team.remainingTimeSeconds': remainingTimeSeconds,
+      'team.updatedAt': now
+    });
+  }
+
+  public async teamResume(roomId: string, timerEnabled: boolean): Promise<void> {
+    const updates: Record<string, unknown> = { status: 'running', 'team.updatedAt': Date.now() };
+    if (timerEnabled) updates['team.currentQuestionStartedAt'] = Date.now();
+    await this.updateRoom(roomId, updates);
+  }
+
+  // Player: submit a Teamwork answer (only touches the player's own entry).
+  public async submitTeamAnswer(roomId: string, uid: string, questionId: number, text: string): Promise<void> {
+    await this.updateRoom(roomId, {
+      [`players.${uid}.teamAnswers.${questionId}`]: { text: text.trim().slice(0, 120), at: Date.now() },
+      [`players.${uid}.lastUpdatedAt`]: Date.now()
+    });
   }
 
   // Join Room with Duplicate Avatar Lock enforcement
@@ -299,7 +586,8 @@ class GameService {
       return { success: false, error: 'เกมในห้องนี้จบลงแล้ว (Game already finished)' };
     }
 
-    if (!isExisting && (room.status !== 'waiting' || !room.acceptingPlayers)) {
+    const canJoinActiveTeam = room.mode === 'team' && (room.status === 'running' || room.status === 'paused') && room.acceptingPlayers;
+    if (!isExisting && ((room.status !== 'waiting' && !canJoinActiveTeam) || !room.acceptingPlayers)) {
       return { success: false, error: 'ห้องนี้ปิดรับผู้เล่นแล้ว (Room closed)' };
     }
 
@@ -335,20 +623,17 @@ class GameService {
       maxCombo: currentPlayers[params.uid]?.maxCombo || 0,
       lastUpdatedAt: Date.now(),
       totalResponseTime: currentPlayers[params.uid]?.totalResponseTime || 0,
-      progress: currentPlayers[params.uid]?.progress || {}
-    };
-
-    const updatedPlayers = {
-      ...currentPlayers,
-      [params.uid]: playerRecord
+      progress: currentPlayers[params.uid]?.progress || {},
+      mode: room.mode || 'solo',
+      ...(currentPlayers[params.uid]?.teamAnswers ? { teamAnswers: currentPlayers[params.uid].teamAnswers } : {})
     };
 
     const updatedRoom: Room = {
       ...room,
-      players: updatedPlayers
+      players: { ...currentPlayers, [params.uid]: playerRecord }
     };
 
-    await this.updateRoom(params.roomId, { players: updatedPlayers });
+    await this.updateRoom(params.roomId, { [`players.${params.uid}`]: playerRecord });
 
     return { success: true, room: updatedRoom };
   }
@@ -406,12 +691,7 @@ class GameService {
       }
     };
 
-    const updatedPlayers = {
-      ...room.players,
-      [params.uid]: updatedPlayer
-    };
-
-    await this.updateRoom(params.roomId, { players: updatedPlayers });
+    await this.updateRoom(params.roomId, { [`players.${params.uid}`]: updatedPlayer });
   }
 
   // Advance to next question for individual player
@@ -428,23 +708,19 @@ class GameService {
       lastUpdatedAt: Date.now()
     };
 
-    const updatedPlayers = {
-      ...room.players,
-      [uid]: updatedPlayer
-    };
-
-    await this.updateRoom(roomId, { players: updatedPlayers });
+    await this.updateRoom(roomId, { [`players.${uid}`]: updatedPlayer });
   }
 
   // Kick Player (Host action)
+  public async leaveRoom(roomId: string, uid: string): Promise<void> {
+    await this.updateRoom(roomId, { [`players.${uid}`]: deleteField() });
+  }
+
   public async kickPlayer(roomId: string, hostUid: string, targetUid: string, reason?: string): Promise<boolean> {
     const room = await this.getRoom(roomId);
     if (!room || room.hostUid !== hostUid) return false;
 
-    const updatedPlayers = { ...room.players };
-    delete updatedPlayers[targetUid];
-
-    await this.updateRoom(roomId, { players: updatedPlayers });
+    await this.updateRoom(roomId, { [`players.${targetUid}`]: deleteField() });
     await this.addAuditLog(roomId, hostUid, 'Host', 'KICK_PLAYER', targetUid, reason || 'Kicked by host');
     return true;
   }

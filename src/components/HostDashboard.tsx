@@ -1,418 +1,193 @@
-import React, { useState, useEffect } from 'react';
-import { Room, RoomPlayer, Question } from '../types';
-import { gameService } from '../services/gameService';
+import { useEffect, useMemo, useState } from 'react';
 import QRCode from 'qrcode';
-import { 
-  Users, 
-  Play, 
-  Pause, 
-  StopCircle, 
-  Copy, 
-  Download, 
-  Check, 
-  UserX, 
-  Settings, 
-  Flame, 
-  Clock, 
-  Layers, 
-  QrCode, 
-  CheckCircle2, 
-  Edit3, 
-  Lock, 
-  Unlock,
-  AlertCircle,
-  Eye,
-  Trophy
-} from 'lucide-react';
+import { AlertTriangle, Check, Copy, Download, Edit3, Lock, Pause, Play, StopCircle, Unlock, UserX, XCircle } from 'lucide-react';
+import type { Question, Room } from '../types';
+import { gameService } from '../services/gameService';
+import ConfirmDialog from './ConfirmDialog';
+import TeamBoard, { getActiveQuestions } from './TeamBoard';
+import { toast } from './Toast';
 
-interface HostDashboardProps {
+interface Props {
   room: Room;
+  hostUid: string;
   onStartGame: () => void;
   onPauseGame: () => void;
   onResumeGame: () => void;
   onEndGameEarly: () => void;
   onOpenQuestionEditor: () => void;
   onCloseRoom: () => void;
+  onOpenHowToPlay: () => void;
 }
 
-export const HostDashboard: React.FC<HostDashboardProps> = ({
-  room,
-  onStartGame,
-  onPauseGame,
-  onResumeGame,
-  onEndGameEarly,
-  onOpenQuestionEditor,
-  onCloseRoom
-}) => {
-  const [qrDataUrl, setQrDataUrl] = useState<string>('');
-  const [copiedLink, setCopiedLink] = useState(false);
-  const [kickConfirmUid, setKickConfirmUid] = useState<string | null>(null);
+export function questionWarnings(q: Question): string[] {
+  const w: string[] = [];
+  if (!q.imageFileName) w.push('ยังไม่มีรูปภาพ');
+  if (!q.hint?.trim()) w.push('ยังไม่มีคำใบ้');
+  if (!q.acceptedAnswers?.length) w.push('ยังไม่มีคำตอบที่ยอมรับ');
+  return w;
+}
 
-  const joinUrl = typeof window !== 'undefined' 
-    ? `${window.location.origin}?room=${room.roomId}` 
-    : `https://social-science-arena.web.app?room=${room.roomId}`;
+type Confirm = null | { kind: 'kick'; uid: string } | { kind: 'end' } | { kind: 'close' };
 
-  // Generate QR code on mount or when roomId changes
+export function HostDashboard({ room, hostUid, onStartGame, onPauseGame, onResumeGame, onEndGameEarly, onOpenQuestionEditor, onCloseRoom, onOpenHowToPlay }: Props) {
+  const [qr, setQr] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [confirm, setConfirm] = useState<Confirm>(null);
+  const [fullQuestions, setFullQuestions] = useState<Question[] | null>(null);
+  const isTeam = room.mode === 'team';
+
+  const joinUrl = `${window.location.origin}?room=${room.roomId}`;
+
   useEffect(() => {
-    QRCode.toDataURL(joinUrl, {
-      width: 320,
-      margin: 1.5,
-      color: {
-        dark: '#0B1715',
-        light: '#FFFFFF'
-      }
-    })
-      .then(url => setQrDataUrl(url))
-      .catch(err => console.error('QR code generation error:', err));
-  }, [joinUrl, room.roomId]);
+    if (isTeam) return;
+    let alive = true;
+    QRCode.toDataURL(joinUrl, { width: 320, margin: 1.5, color: { dark: '#2B3A55', light: '#FFFFFF' } })
+      .then(url => alive && setQr(url))
+      .catch(() => undefined);
+    return () => { alive = false; };
+  }, [joinUrl, isTeam]);
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(joinUrl);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2000);
-  };
+  useEffect(() => {
+    if (!isTeam) return;
+    let alive = true;
+    gameService.getPrivateQuestions(room.roomId).then(l => alive && setFullQuestions(l)).catch(() => undefined);
+    return () => { alive = false; };
+  }, [isTeam, room.roomId, room.questionSetVersion]);
 
-  const handleDownloadQR = () => {
-    if (!qrDataUrl) return;
-    const link = document.createElement('a');
-    link.href = qrDataUrl;
-    link.download = `Arena_QR_${room.roomId}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleToggleAcceptingPlayers = async () => {
-    await gameService.updateRoom(room.roomId, {
-      acceptingPlayers: !room.acceptingPlayers
-    });
-  };
-
-  const handleKickPlayer = async (uid: string) => {
-    await gameService.kickPlayer(room.roomId, room.hostUid, uid);
-    setKickConfirmUid(null);
-  };
-
-  const playersList = Object.values(room.players || {});
-  const readyCount = playersList.filter(p => p.ready).length;
+  const players = Object.values(room.players || {});
   const isRunning = room.status === 'running';
   const isPaused = room.status === 'paused';
   const isWaiting = room.status === 'waiting' || room.status === 'ready';
+  const canStart = players.length >= room.settings.minPlayers;
+  const checkQs = isTeam ? (fullQuestions ?? []) : room.questions;
+  const active = useMemo(() => checkQs.filter(q => q.enabled !== false), [checkQs]);
+  const warnings = useMemo(() => active.map(q => ({ q, w: questionWarnings(q) })).filter(x => x.w.length), [active]);
+  const noQuestions = getActiveQuestions(room).length === 0;
 
-  const canStart = playersList.length >= room.settings.minPlayers;
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(joinUrl); setCopied(true); window.setTimeout(() => setCopied(false), 2000); }
+    catch { toast('ไม่สามารถคัดลอกลิงก์ได้', 'error'); }
+  };
 
-  return (
-    <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 py-6 space-y-6">
-      
-      {/* Top Banner: Room Status & Quick Host Controls */}
-      <div className="glass-card rounded-2xl p-4 sm:p-6 border border-[#62F5C5]/30 shadow-2xl flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className={`w-3 h-3 rounded-full ${
-              isRunning ? 'bg-[#62F5C5] animate-ping' : isPaused ? 'bg-amber-400' : 'bg-blue-400'
-            }`} />
-            <span className="text-xs font-mono uppercase tracking-wider text-[#F5F0E6]/60">
-              สถานะห้อง: <strong className="text-[#62F5C5]">{room.status.toUpperCase()}</strong>
-            </span>
-          </div>
-          <h1 className="font-display font-extrabold text-2xl sm:text-3xl text-[#F5F0E6] mt-1">
-            {room.name}
-          </h1>
-          <p className="text-xs text-[#F5F0E6]/70 mt-0.5">
-            รหัสห้อง (Room Code): <strong className="text-[#D6B36A] font-mono text-base tracking-widest">{room.roomId}</strong>
-          </p>
-        </div>
+  const downloadQr = () => {
+    if (!qr) return;
+    const a = document.createElement('a');
+    a.href = qr;
+    a.download = `Arena_QR_${room.roomId}.png`;
+    a.click();
+  };
 
-        {/* Host Game Controller Buttons */}
+  const toggleAccepting = () => gameService.updateRoom(room.roomId, { acceptingPlayers: !room.acceptingPlayers }).catch(() => toast('ไม่สามารถบันทึกข้อมูลได้ กรุณาลองอีกครั้ง', 'error'));
+
+  const onConfirm = async () => {
+    const c = confirm;
+    setConfirm(null);
+    if (!c) return;
+    if (c.kind === 'kick') {
+      const ok = await gameService.kickPlayer(room.roomId, hostUid, c.uid).catch(() => false);
+      toast(ok ? 'นำผู้เล่นออกจากห้องแล้ว' : 'คุณไม่มีสิทธิ์ควบคุมห้องนี้', ok ? 'success' : 'error');
+    }
+    if (c.kind === 'end') onEndGameEarly();
+    if (c.kind === 'close') onCloseRoom();
+  };
+
+  const header = (
+    <div className="card card-tint-sky flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5">
+      <div>
         <div className="flex flex-wrap items-center gap-2">
-          {isWaiting && (
-            <>
-              <button
-                onClick={onOpenQuestionEditor}
-                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-[#103B32] hover:bg-[#103B32]/80 border border-[#62F5C5]/30 text-[#F5F0E6] transition-all cursor-pointer"
-                title="จัดการข้อคำถามและคำตอบ"
-              >
-                <Edit3 className="w-4 h-4 text-[#62F5C5]" />
-                <span>แก้ไขคำถาม ({room.questions?.length || 10})</span>
-              </button>
-
-              <button
-                onClick={onStartGame}
-                disabled={!canStart}
-                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-display font-bold text-sm transition-all shadow-lg cursor-pointer ${
-                  canStart
-                    ? 'bg-gradient-to-r from-[#62F5C5] to-[#40C59D] text-[#0B1715] hover:opacity-95 shadow-[0_0_20px_rgba(98,245,197,0.4)]'
-                    : 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700'
-                }`}
-                title={canStart ? "เริ่มเกมสำหรับทุกคนในห้อง" : `ต้องการผู้เล่นขั้นต่ำอย่างน้อย ${room.settings.minPlayers} คน`}
-              >
-                <Play className="w-4 h-4 fill-current" />
-                <span>เริ่มการแข่งขัน (Start Game)</span>
-              </button>
-            </>
-          )}
-
-          {isRunning && (
-            <button
-              onClick={onPauseGame}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-display font-bold text-xs bg-amber-500 hover:bg-amber-400 text-stone-950 transition-all shadow-md cursor-pointer"
-            >
-              <Pause className="w-4 h-4 fill-current" />
-              <span>หยุดเวลาชั่วคราว (Pause)</span>
-            </button>
-          )}
-
-          {isPaused && (
-            <button
-              onClick={onResumeGame}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-display font-bold text-xs bg-[#62F5C5] hover:bg-[#40C59D] text-[#0B1715] transition-all shadow-md cursor-pointer animate-pulse"
-            >
-              <Play className="w-4 h-4 fill-current" />
-              <span>เล่นต่อ (Resume)</span>
-            </button>
-          )}
-
-          {(isRunning || isPaused) && (
-            <button
-              onClick={() => {
-                if (confirm('คุณแน่ใจหรือไม่ว่าต้องการจบเกมก่อนกำหนดและนำทุกคนสู่หน้าสรุปผล?')) {
-                  onEndGameEarly();
-                }
-              }}
-              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 transition-colors cursor-pointer"
-            >
-              <StopCircle className="w-4 h-4" />
-              <span>จบเกม (End Game)</span>
-            </button>
-          )}
-
-          <button
-            onClick={handleToggleAcceptingPlayers}
-            className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-medium bg-[#0B1715]/70 hover:bg-[#0B1715] border border-[#62F5C5]/20 text-[#F5F0E6] transition-colors"
-            title={room.acceptingPlayers ? "ปิดรับผู้เล่นใหม่" : "เปิดรับผู้เล่นใหม่"}
-          >
-            {room.acceptingPlayers ? (
-              <>
-                <Unlock className="w-4 h-4 text-[#62F5C5]" />
-                <span className="hidden sm:inline">เปิดรับคน</span>
-              </>
-            ) : (
-              <>
-                <Lock className="w-4 h-4 text-rose-400" />
-                <span className="hidden sm:inline">ปิดรับคน</span>
-              </>
-            )}
-          </button>
+          <span className={`badge ${isTeam ? 'badge-lavender' : ''}`}>{isTeam ? 'Teamwork' : 'Battle'}</span>
+          <span className="badge badge-sky">สถานะ: {room.status}</span>
         </div>
+        <h1 className="mt-1 text-2xl font-bold">{room.name}</h1>
+        <p className="text-sm text-ink-soft">รหัสห้อง <strong className="font-mono text-xl tracking-widest text-ink">{room.roomId}</strong></p>
       </div>
-
-      {/* Main Grid: Left = QR & Share Info, Right = Players Roster / Live Progress */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Left Column: QR Code & Join Information */}
-        <div className="lg:col-span-1 space-y-6">
-          <div className="glass-card rounded-2xl p-5 border border-[#62F5C5]/30 shadow-xl space-y-4 text-center">
-            <div className="flex items-center justify-center gap-2 text-xs font-semibold text-[#62F5C5] uppercase tracking-wider">
-              <QrCode className="w-4 h-4" /> สแกน QR Code เพื่อเข้าร่วมห้อง
-            </div>
-
-            {/* QR Code Container */}
-            <div className="w-56 h-56 mx-auto p-3 bg-white rounded-2xl shadow-xl flex items-center justify-center border-4 border-[#62F5C5]">
-              {qrDataUrl ? (
-                <img src={qrDataUrl} alt="Room QR Code" className="w-full h-full object-contain" />
-              ) : (
-                <div className="text-xs text-stone-500 animate-pulse">กำลังสร้าง QR Code...</div>
-              )}
-            </div>
-
-            {/* Room Code Badge */}
-            <div className="p-2.5 rounded-xl bg-[#103B32]/60 border border-[#D6B36A]/30">
-              <span className="text-[11px] text-[#F5F0E6]/60 block">รหัสสำหรับพิมพ์เข้าห้องด้วยตนเอง</span>
-              <span className="font-mono font-black text-2xl tracking-widest text-[#D6B36A]">
-                {room.roomId}
-              </span>
-            </div>
-
-            {/* Join URL and Copy */}
-            <div className="space-y-2">
-              <div className="p-2 rounded-lg bg-[#0B1715] border border-[#62F5C5]/20 text-[11px] text-[#F5F0E6]/70 truncate font-mono text-left">
-                {joinUrl}
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={handleCopyLink}
-                  className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold bg-[#103B32] hover:bg-[#103B32]/80 border border-[#62F5C5]/40 text-[#62F5C5] transition-all cursor-pointer"
-                >
-                  {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedLink ? 'คัดลอกแล้ว' : 'Copy Link'}</span>
-                </button>
-
-                <button
-                  onClick={handleDownloadQR}
-                  className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold bg-[#103B32] hover:bg-[#103B32]/80 border border-[#D6B36A]/40 text-[#D6B36A] transition-all cursor-pointer"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Download QR</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Settings summary */}
-            <div className="pt-3 border-t border-[#62F5C5]/15 text-left text-xs text-[#F5F0E6]/70 space-y-1">
-              <div className="flex justify-between">
-                <span>จำนวนข้อคำถาม:</span>
-                <strong className="text-[#F5F0E6]">{room.questions?.length || 10} ข้อ</strong>
-              </div>
-              <div className="flex justify-between">
-                <span>เวลาต่อข้อ:</span>
-                <strong className="text-[#F5F0E6]">{room.settings.questionTimeSeconds} วินาที</strong>
-              </div>
-              <div className="flex justify-between">
-                <span>ผู้เล่นขั้นต่ำ:</span>
-                <strong className="text-[#F5F0E6]">{room.settings.minPlayers} คน</strong>
-              </div>
-              <div className="flex justify-between">
-                <span>โหมดสลับข้อสุ่ม:</span>
-                <strong className="text-[#F5F0E6]">{room.settings.randomizeQuestionOrder ? 'เปิดใช้งาน' : 'เรียง 1-10'}</strong>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        {/* Right Column: Live Players Roster & In-Game Status Dashboard */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="glass-card rounded-2xl p-5 border border-[#62F5C5]/30 shadow-xl space-y-4">
-            
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#62F5C5]/20 pb-3">
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-[#62F5C5]" />
-                <h3 className="font-display font-bold text-lg text-[#F5F0E6]">
-                  {isWaiting ? 'รายชื่อผู้เข้าร่วมรอเริ่มเกม' : 'สถานะผู้เล่นขณะแข่งขัน (Live Monitor)'}
-                </h3>
-              </div>
-
-              <div className="flex items-center gap-3 text-xs text-[#F5F0E6]/70">
-                <span>
-                  ผู้เข้าร่วม: <strong className="text-[#62F5C5] text-sm">{playersList.length}</strong> / {room.settings.maxPlayers} คน
-                </span>
-                {isWaiting && (
-                  <span className="text-emerald-400">
-                    (พร้อม {readyCount} คน)
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Empty State */}
-            {playersList.length === 0 ? (
-              <div className="text-center py-12 space-y-3">
-                <div className="w-16 h-16 rounded-full bg-[#103B32]/50 border border-[#62F5C5]/20 flex items-center justify-center mx-auto text-[#62F5C5]">
-                  <Users className="w-8 h-8 opacity-60" />
-                </div>
-                <h4 className="font-display font-semibold text-base text-[#F5F0E6]">
-                  ยังไม่มีผู้เล่นเข้าร่วมห้อง
-                </h4>
-                <p className="text-xs text-[#F5F0E6]/60 max-w-sm mx-auto">
-                  แชร์ลิงก์หรือแสดง QR Code ด้านซ้าย ให้ผู้เล่นสแกนด้วยโทรศัพท์มือถือหรือแท็บเล็ตเพื่อเข้าร่วมห้อง
-                </p>
-              </div>
-            ) : (
-              /* Players Grid */
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[500px] overflow-y-auto pr-1">
-                {playersList.map((player) => {
-                  const currentProg = player.progress?.[player.currentQuestion];
-                  const piecesCount = currentProg?.piecesRevealed || 0;
-                  const isAnswered = currentProg?.answeredCorrectly;
-
-                  return (
-                    <div
-                      key={player.uid}
-                      className={`p-3.5 rounded-xl border transition-all ${
-                        isAnswered
-                          ? 'bg-emerald-950/30 border-emerald-500/40'
-                          : 'bg-[#0B1715]/70 border-[#62F5C5]/20 hover:border-[#62F5C5]/40'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2.5">
-                          <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${player.avatarBgColor || 'from-emerald-700 to-teal-500'} flex items-center justify-center text-xl shadow-sm border border-white/20`}>
-                            {player.avatarEmoji}
-                          </div>
-                          <div>
-                            <div className="font-semibold text-sm text-[#F5F0E6] truncate max-w-[130px] sm:max-w-[160px]">
-                              {player.displayName}
-                            </div>
-                            <div className="text-[11px] text-[#F5F0E6]/50 flex items-center gap-1.5">
-                              <span className={`w-1.5 h-1.5 rounded-full ${
-                                player.connectionStatus === 'online' ? 'bg-emerald-400' : 'bg-zinc-500'
-                              }`} />
-                              <span>{player.connectionStatus === 'online' ? 'ออนไลน์' : 'ออฟไลน์'}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Kick Player Button with confirmation */}
-                        {isWaiting && (
-                          <div>
-                            {kickConfirmUid === player.uid ? (
-                              <div className="flex items-center gap-1">
-                                <button
-                                  onClick={() => handleKickPlayer(player.uid)}
-                                  className="px-2 py-1 rounded bg-rose-600 text-white text-[11px] font-bold"
-                                >
-                                  ยืนยัน
-                                </button>
-                                <button
-                                  onClick={() => setKickConfirmUid(null)}
-                                  className="px-2 py-1 rounded bg-zinc-700 text-white text-[11px]"
-                                >
-                                  ยกเลิก
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => setKickConfirmUid(player.uid)}
-                                className="p-1.5 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
-                                title="เตะผู้เล่นออกจากห้อง"
-                              >
-                                <UserX className="w-4 h-4" />
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* In-game live progress cluster (when game is running) */}
-                      {(isRunning || isPaused) && (
-                        <div className="mt-3 pt-2.5 border-t border-[#62F5C5]/10 grid grid-cols-3 gap-2 text-center text-xs">
-                          <div>
-                            <span className="text-[10px] text-[#F5F0E6]/50 block">ข้อปัจจุบัน</span>
-                            <strong className="text-[#F5F0E6]">ข้อ {player.currentQuestion}</strong>
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-[#F5F0E6]/50 block">เปิดจิ๊กซอว์</span>
-                            <strong className="text-[#62F5C5]">{piecesCount}/10</strong>
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-[#F5F0E6]/50 block">คะแนนรวม</span>
-                            <strong className="text-[#D6B36A] font-extrabold">{player.score}</strong>
-                          </div>
-                        </div>
-                      )}
-
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-          </div>
-        </div>
-
+      <div className="flex flex-wrap gap-2">
+        {isWaiting && <button type="button" className="btn btn-secondary" onClick={onOpenQuestionEditor}><Edit3 size={16} aria-hidden />แก้ไขคำถาม ({getActiveQuestions(room).length})</button>}
+        {isWaiting && <button type="button" className="btn btn-primary" onClick={onStartGame} disabled={!canStart || noQuestions}><Play size={16} aria-hidden />เริ่มเกม</button>}
+        {!isTeam && isRunning && <button type="button" className="btn btn-peach" onClick={onPauseGame}><Pause size={16} aria-hidden />พักเกม</button>}
+        {!isTeam && isPaused && <button type="button" className="btn btn-primary" onClick={onResumeGame}><Play size={16} aria-hidden />เล่นต่อ</button>}
+        {!isTeam && (isRunning || isPaused) && <button type="button" className="btn btn-danger" onClick={() => setConfirm({ kind: 'end' })}><StopCircle size={16} aria-hidden />จบเกม</button>}
+        <button type="button" className="btn btn-danger" onClick={() => setConfirm({ kind: 'close' })}>ปิดห้อง</button>
       </div>
-
     </div>
   );
-};
+
+  const playerList = (
+    <section className="card p-4 sm:p-5" aria-label="รายชื่อผู้เล่น">
+      <h2 className="font-bold">ผู้เล่น ({players.length}/{room.settings.maxPlayers})</h2>
+      {players.length === 0 ? <p className="mt-3 text-sm text-ink-soft">ยังไม่มีผู้เล่น — แชร์รหัสห้องหรือ QR Code ให้ผู้เล่นเข้าร่วม</p> : (
+        <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+          {players.map(p => (
+            <li key={p.uid} className="flex items-center justify-between gap-2 rounded-2xl bg-cream p-3">
+              <span className="min-w-0 truncate"><span className="mr-1 text-xl" aria-hidden>{p.avatarEmoji}</span><strong>{p.displayName}</strong>
+                {!isTeam && <span className="ml-2 text-xs text-ink-soft">ข้อ {p.currentQuestion} · {p.score} คะแนน</span>}
+              </span>
+              <button type="button" className="btn btn-sm btn-danger !px-2" aria-label={`นำ ${p.displayName} ออกจากห้อง`} onClick={() => setConfirm({ kind: 'kick', uid: p.uid })}><UserX size={15} aria-hidden /></button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+
+  const dialogs = (
+    <ConfirmDialog
+      open={confirm !== null}
+      danger
+      title={confirm?.kind === 'kick' ? 'นำผู้เล่นออกจากห้อง?' : confirm?.kind === 'end' ? 'จบเกมตอนนี้?' : 'ปิดห้องนี้?'}
+      confirmLabel={confirm?.kind === 'kick' ? 'นำออก' : confirm?.kind === 'end' ? 'จบเกม' : 'ปิดห้อง'}
+      onConfirm={onConfirm}
+      onCancel={() => setConfirm(null)}
+    >
+      {confirm?.kind === 'close' ? 'ผู้เล่นจะไม่สามารถเข้าห้องนี้ได้อีก' : confirm?.kind === 'end' ? 'ระบบจะสรุปผลจากคะแนนปัจจุบัน' : 'ผู้เล่นคนนี้จะถูกลบออกจากรายชื่อ'}
+    </ConfirmDialog>
+  );
+
+  if (isTeam && (isRunning || isPaused)) {
+    return (
+      <TeamBoard room={room} uid={hostUid} isHost onFinish={onEndGameEarly} onCloseRoom={onCloseRoom}
+        onOpenHowToPlay={onOpenHowToPlay} onOpenSettings={onOpenQuestionEditor} />
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-7xl space-y-5 px-3 py-6 sm:px-6">
+      {header}
+
+      <div className="grid gap-5 lg:grid-cols-[20rem_1fr]">
+        <section className="card p-4 text-center sm:p-5" aria-label="เชิญผู้เล่น">
+          <h2 className="font-bold">เชิญผู้เล่น</h2>
+          {qr ? <img src={qr} alt={`QR Code เข้าห้อง ${room.roomId}`} className="mx-auto mt-3 w-56 rounded-2xl border border-line" /> : <div className="skeleton mx-auto mt-3 h-56 w-56" />}
+          <div className="mt-3 flex flex-wrap justify-center gap-2">
+            <button type="button" className="btn btn-sm btn-secondary" onClick={copy}>{copied ? <Check size={15} aria-hidden /> : <Copy size={15} aria-hidden />}{copied ? 'คัดลอกแล้ว' : 'คัดลอกลิงก์'}</button>
+            <button type="button" className="btn btn-sm btn-secondary" onClick={downloadQr} disabled={!qr}><Download size={15} aria-hidden />บันทึก QR</button>
+          </div>
+          {isWaiting && (
+            <button type="button" className={`btn btn-sm mt-3 w-full ${room.acceptingPlayers ? 'btn-secondary' : 'btn-peach'}`} onClick={toggleAccepting}>
+              {room.acceptingPlayers ? <><Lock size={15} aria-hidden />ปิดรับผู้เล่น</> : <><Unlock size={15} aria-hidden />เปิดรับผู้เล่น</>}
+            </button>
+          )}
+        </section>
+
+        <div className="space-y-5">
+          {playerList}
+          {isWaiting && (
+            <section className="card p-4 sm:p-5" aria-label="ตรวจสอบคำถาม">
+              <h2 className="font-bold">ตรวจสอบก่อนเริ่ม ({active.length} ข้อที่เปิดใช้งาน)</h2>
+              {noQuestions && <p role="alert" className="mt-2 flex items-center gap-2 text-sm font-semibold text-coral-deep"><XCircle size={16} aria-hidden />ไม่มีคำถามที่เปิดใช้งาน</p>}
+              {isTeam && fullQuestions === null && <p className="mt-2 text-sm text-ink-soft">กำลังโหลดคำถาม…</p>}
+              {warnings.length === 0 && active.length > 0 && <p className="mt-2 text-sm font-semibold text-mint-deep">ข้อมูลครบทุกข้อ พร้อมเริ่มเกม</p>}
+              <ul className="mt-2 space-y-1">
+                {warnings.map(({ q, w }) => (
+                  <li key={q.id} className="flex items-start gap-2 text-sm text-butter-deep"><AlertTriangle size={16} className="mt-0.5 shrink-0" aria-hidden />ข้อ {q.id} {q.topic}: {w.join(', ')}</li>
+                ))}
+              </ul>
+              {!canStart && <p className="mt-3 text-sm text-ink-soft">ต้องมีผู้เล่นอย่างน้อย {room.settings.minPlayers} คนจึงจะเริ่มเกมได้</p>}
+            </section>
+          )}
+        </div>
+      </div>
+      {dialogs}
+    </div>
+  );
+}
